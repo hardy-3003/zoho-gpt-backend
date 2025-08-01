@@ -49,18 +49,3 @@ if __name__ == "__main__":
     app.run()
 from flask import request, jsonify
 from zoho_api import fetch_invoices
-
-@app.route("/invoices", methods=["GET"])
-def get_invoices():
-    try:
-        org_id = request.args.get("organization_id")
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
-
-        if not org_id or not start_date or not end_date:
-            return jsonify({"error": "Missing parameters"}), 400
-
-        data = fetch_invoices(org_id, start_date, end_date)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
