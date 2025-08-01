@@ -49,3 +49,17 @@ if __name__ == "__main__":
     app.run()
 from flask import request, jsonify
 from zoho_api import fetch_invoices
+@app.route("/generate_mis", methods=["GET"])
+def generate_mis():
+    org_name = request.args.get("org_name")
+    month = request.args.get("month")
+    year = request.args.get("year")
+
+    if not org_name or not month or not year:
+        return jsonify({"error": "Missing required query parameters"}), 400
+
+    try:
+        result = generate_mis_report(org_name, month, year)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
