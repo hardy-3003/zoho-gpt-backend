@@ -138,3 +138,7 @@ def mcp_fetch():
             } for id_ in ids
         ]
     })
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
