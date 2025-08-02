@@ -64,3 +64,48 @@ def generate_mis():
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+from flask import Flask, jsonify, request
+
+app = Flask(__name__)
+
+# MCP Manifest Endpoint
+@app.route("/mcp/manifest", methods=["GET"])
+def manifest():
+    return jsonify({
+        "name": "Zoho GPT Connector",
+        "description": "Query your Zoho Books data using ChatGPT.",
+        "version": "1.0",
+        "tools": [
+            {"type": "search"},
+            {"type": "fetch"}
+        ]
+    })
+
+# MCP Search Endpoint
+@app.route("/mcp/search", methods=["POST"])
+def mcp_search():
+    query = request.json.get("query", "")
+    return jsonify({
+        "results": [
+            {
+                "id": "test-id-001",
+                "name": f"Dummy Result for '{query}'",
+                "description": "This is a test result. Replace this with live search logic."
+            }
+        ]
+    })
+
+# MCP Fetch Endpoint
+@app.route("/mcp/fetch", methods=["POST"])
+def mcp_fetch():
+    ids = request.json.get("ids", [])
+    return jsonify([
+        {
+            "id": i,
+            "content": f"This is mocked content for ID: {i}"
+        } for i in ids
+    ])
+
+if __name__ == '__main__':
+    app.run(debug=True)
