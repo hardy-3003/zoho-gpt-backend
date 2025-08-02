@@ -109,3 +109,32 @@ def mcp_fetch():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/mcp/search', methods=['POST'])
+def mcp_search():
+    query = request.json.get("query", "")
+    return jsonify({
+        "results": [
+            {
+                "id": "result-001",
+                "name": f"Zoho Query: {query}",
+                "description": f"Query for: {query}",
+            }
+        ]
+    })
+
+@app.route('/mcp/fetch', methods=['POST'])
+def mcp_fetch():
+    ids = request.json.get("ids", [])
+    return jsonify({
+        "records": [
+            {
+                "id": id_,
+                "content": f"Detailed Zoho data for {id_}"
+            } for id_ in ids
+        ]
+    })
