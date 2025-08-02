@@ -1,23 +1,31 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 import os
 
 app = Flask(__name__)
+CORS(app)
 
+# Load env variables
 ZOHO_REFRESH_TOKEN = os.getenv("ZOHO_REFRESH_TOKEN")
 ZOHO_CLIENT_ID = os.getenv("ZOHO_CLIENT_ID")
 ZOHO_CLIENT_SECRET = os.getenv("ZOHO_CLIENT_SECRET")
 
+# Health check
 @app.route("/health")
 def health():
     return {"status": "ok"}
 
+# Endpoint to fetch invoices
 @app.route("/get_invoices", methods=["GET"])
 def get_invoices():
     org_id = request.args.get("organization_id")
     month = request.args.get("month")  # Format: YYYY-MM
 
-    # Step 1: Get new access token using refresh token
+    if not org_id or not month:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    # Refresh access token
     auth_url = "https://accounts.zoho.in/oauth/v2/token"
     params = {
         "refresh_token": ZOHO_REFRESH_TOKEN,
@@ -28,11 +36,9 @@ def get_invoices():
     auth_response = requests.post(auth_url, params=params)
     access_token = auth_response.json().get("access_token")
 
-    # Step 2: Fetch invoices from Zoho Books
-    headers = {
-        "Authorization": f"Zoho-oauthtoken {access_token}"
-    }
-    api_url = f"https://www.zohoapis.in/books/v3/invoices"
+    # Fetch invoices
+    headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+    api_url = "https://www.zohoapis.in/books/v3/invoices"
     params = {
         "organization_id": org_id,
         "date_start": f"{month}-01",
@@ -41,15 +47,10 @@ def get_invoices():
         "sort_column": "date",
         "sort_order": "A"
     }
-
     response = requests.get(api_url, headers=headers, params=params)
     return jsonify(response.json())
 
-if __name__ == "__main__":
-    app.run()
-from flask import request, jsonify
-from zoho_api import fetch_invoices
-
+# MIS Generator (placeholder)
 @app.route("/generate_mis", methods=["GET"])
 def generate_mis():
     org_name = request.args.get("org_name")
@@ -59,17 +60,15 @@ def generate_mis():
     if not org_name or not month or not year:
         return jsonify({"error": "Missing required query parameters"}), 400
 
-    try:
-        result = generate_mis_report(org_name, month, year)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # Just a test response – replace with real logic
+    return jsonify({
+        "org": org_name,
+        "month": month,
+        "year": year,
+        "status": "MIS generated (mock)"
+    })
 
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
-
-# MCP Manifest Endpoint
+# MCP manifest
 @app.route("/mcp/manifest", methods=["GET"])
 def manifest():
     return jsonify({
@@ -82,39 +81,8 @@ def manifest():
         ]
     })
 
-# MCP Search Endpoint
+# MCP search endpoint
 @app.route("/mcp/search", methods=["POST"])
-def mcp_search():
-    query = request.json.get("query", "")
-    return jsonify({
-        "results": [
-            {
-                "id": "test-id-001",
-                "name": f"Dummy Result for '{query}'",
-                "description": "This is a test result. Replace this with live search logic."
-            }
-        ]
-    })
-
-# MCP Fetch Endpoint
-@app.route("/mcp/fetch", methods=["POST"])
-def mcp_fetch():
-    ids = request.json.get("ids", [])
-    return jsonify([
-        {
-            "id": i,
-            "content": f"This is mocked content for ID: {i}"
-        } for i in ids
-    ])
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/mcp/search', methods=['POST'])
 def mcp_search():
     query = request.json.get("query", "")
     return jsonify({
@@ -122,12 +90,13 @@ def mcp_search():
             {
                 "id": "result-001",
                 "name": f"Zoho Query: {query}",
-                "description": f"Query for: {query}",
+                "description": f"Query for: {query}"
             }
         ]
     })
 
-@app.route('/mcp/fetch', methods=['POST'])
+# MCP fetch endpoint
+@app.route("/mcp/fetch", methods=["POST"])
 def mcp_fetch():
     ids = request.json.get("ids", [])
     return jsonify({
@@ -138,7 +107,7 @@ def mcp_fetch():
             } for id_ in ids
         ]
     })
-from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)
+# Start app
+if __name__ == "__main__":
+    app.run(debug=True)
