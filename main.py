@@ -179,8 +179,10 @@ async def mcp_fetch(request: Request):
             }]
         }
 
-    except Exception as e:
+      except Exception as e:
         return {"error": str(e)}
-        @app.get("/health")
+
+# === Health Check Endpoint ===
+@app.get("/health")
 async def health_check():
     return {"status": "ok"}
