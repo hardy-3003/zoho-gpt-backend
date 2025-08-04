@@ -1,14 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import requests
-import os
-import json
+import requests, os, json
 from datetime import datetime
-from typing import List, Dict
 
 app = FastAPI()
 
-# Allow ChatGPT to call your backend
+# CORS for ChatGPT MCP
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load credentials from environment or file
+# === Configuration ===
 CREDENTIALS_FILE = "zoho_credentials.json"
 ORG_IDS = {
     "formation": "60020606976",
@@ -25,6 +22,7 @@ ORG_IDS = {
     "third company": "YOUR_THIRD_COMPANY_ID"
 }
 
+# === Helpers ===
 def load_credentials():
     if not os.path.exists(CREDENTIALS_FILE):
         raise Exception("Missing zoho_credentials.json")
@@ -43,20 +41,25 @@ def get_access_token():
     res = requests.post(url, params=params).json()
     return res["access_token"], creds["api_domain"]
 
-# MCP manifest — Required
+# === Save Credentials (optional helper) ===
+@app.post("/save_credentials")
+async def save_credentials(request: Request):
+    data = await request.json()
+    with open(CREDENTIALS_FILE, "w") as f:
+        json.dump(data, f)
+    return {"status": "Credentials saved"}
+
+# === MCP manifest ===
 @app.post("/mcp/manifest")
 async def mcp_manifest():
     return {
         "name": "Zoho GPT Connector",
         "description": "Query your Zoho Books data using ChatGPT.",
         "version": "1.0",
-        "tools": [
-            {"type": "search"},
-            {"type": "fetch"}
-        ]
+        "tools": [{"type": "search"}, {"type": "fetch"}]
     }
 
-# MCP search — Just stores query
+# === MCP search ===
 last_query = {}
 
 @app.post("/mcp/search")
@@ -72,22 +75,19 @@ async def mcp_search(request: Request):
         }]
     }
 
-# MCP fetch — Real data logic
+# === MCP fetch ===
 @app.post("/mcp/fetch")
 async def mcp_fetch(request: Request):
     try:
         query = last_query.get("text", "").lower()
         if not query:
-            return {"error": "Missing query from search"}
+            return {"error": "Missing query"}
 
-        access_token, api_domain = get_access_token()
-        headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
-
-        # Detect org
+        # Extract company/org
         org_key = next((k for k in ORG_IDS if k in query), "formation")
         org_id = ORG_IDS[org_key]
 
-        # Detect date
+        # Extract date
         month_map = {
             "january": "01", "february": "02", "march": "03", "april": "04",
             "may": "05", "june": "06", "july": "07", "august": "08",
@@ -99,11 +99,14 @@ async def mcp_fetch(request: Request):
         start_date = f"{year}-{month_num}-01"
         end_date = f"{year}-{month_num}-30"
 
-        # Handle salary queries (expenses + vendor bills)
+        # Auth
+        access_token, api_domain = get_access_token()
+        headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+
+        # ==== Salary Query ====
         if "salary" in query or "wages" in query:
             expenses_url = f"{api_domain}/books/v3/expenses"
             bills_url = f"{api_domain}/books/v3/vendorbills"
-
             params = {
                 "organization_id": org_id,
                 "date_start": start_date,
@@ -111,17 +114,16 @@ async def mcp_fetch(request: Request):
                 "filter_by": "Category.All"
             }
 
-            expenses = requests.get(expenses_url, headers=headers, params=params).json().get("expenses", [])
+            exp = requests.get(expenses_url, headers=headers, params=params).json().get("expenses", [])
             bills = requests.get(bills_url, headers=headers, params=params).json().get("bills", [])
-
             salary_data = []
 
-            for e in expenses:
+            for e in exp:
                 if "salary" in e.get("description", "").lower() or "salary" in e.get("category_name", "").lower():
                     salary_data.append({
+                        "source": "Expense",
                         "employee": e.get("vendor_name"),
                         "amount": e.get("total"),
-                        "source": "Expense",
                         "date": e.get("date"),
                         "desc": e.get("description")
                     })
@@ -130,9 +132,9 @@ async def mcp_fetch(request: Request):
                 for line in b.get("line_items", []):
                     if "salary" in line.get("description", "").lower():
                         salary_data.append({
+                            "source": "Vendor Bill",
                             "employee": b.get("vendor_name"),
                             "amount": line.get("item_total"),
-                            "source": "Vendor Bill",
                             "date": b.get("date"),
                             "desc": line.get("description")
                         })
@@ -140,11 +142,11 @@ async def mcp_fetch(request: Request):
             return {
                 "records": [{
                     "id": "result-001",
-                    "content": salary_data or "No salary or wages data found."
+                    "content": salary_data or "No salary data found."
                 }]
             }
 
-        # Handle P&L logic
+        # ==== P&L Query ====
         if "p&l" in query or "profit and loss" in query or "income" in query:
             url = f"{api_domain}/books/v3/reports/ProfitAndLoss"
             params = {
@@ -165,10 +167,12 @@ async def mcp_fetch(request: Request):
                 }]
             }
 
+        # Future logic will go here...
+
         return {
             "records": [{
                 "id": "result-001",
-                "content": "Query received but no logic found for this type yet."
+                "content": "Query received but no logic found yet."
             }]
         }
 
