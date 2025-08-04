@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import requests, os, json
-from datetime import datetime
 
 app = FastAPI()
 
-# CORS for ChatGPT MCP
+# === Enable CORS for MCP / ChatGPT access ===
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,15 +14,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === Configuration ===
+# === Constants & Config ===
 CREDENTIALS_FILE = "zoho_credentials.json"
 ORG_IDS = {
     "formation": "60020606976",
     "shree sai engineering": "60018074998",
-    "third company": "YOUR_THIRD_COMPANY_ID"
+    "active services": "60019742072"
 }
 
-# === Helpers ===
+# === Credential Utilities ===
 def load_credentials():
     if not os.path.exists(CREDENTIALS_FILE):
         raise Exception("Missing zoho_credentials.json")
@@ -41,15 +41,19 @@ def get_access_token():
     res = requests.post(url, params=params).json()
     return res["access_token"], creds["api_domain"]
 
-# === Save Credentials (optional helper) ===
+# === Save Credentials Endpoint ===
 @app.post("/save_credentials")
 async def save_credentials(request: Request):
     data = await request.json()
+    required = ["client_id", "client_secret", "refresh_token", "api_domain"]
+    for field in required:
+        if field not in data:
+            return JSONResponse(status_code=400, content={"error": f"Missing field: {field}"})
     with open(CREDENTIALS_FILE, "w") as f:
         json.dump(data, f)
-    return {"status": "Credentials saved"}
+    return {"status": "Credentials saved successfully"}
 
-# === MCP manifest ===
+# === MCP Manifest ===
 @app.post("/mcp/manifest")
 async def mcp_manifest():
     return {
@@ -59,7 +63,7 @@ async def mcp_manifest():
         "tools": [{"type": "search"}, {"type": "fetch"}]
     }
 
-# === MCP search ===
+# === MCP Search Endpoint ===
 last_query = {}
 
 @app.post("/mcp/search")
@@ -75,7 +79,7 @@ async def mcp_search(request: Request):
         }]
     }
 
-# === MCP fetch ===
+# === MCP Fetch Endpoint ===
 @app.post("/mcp/fetch")
 async def mcp_fetch(request: Request):
     try:
@@ -83,11 +87,11 @@ async def mcp_fetch(request: Request):
         if not query:
             return {"error": "Missing query"}
 
-        # Extract company/org
+        # --- Detect org ---
         org_key = next((k for k in ORG_IDS if k in query), "formation")
         org_id = ORG_IDS[org_key]
 
-        # Extract date
+        # --- Detect date ---
         month_map = {
             "january": "01", "february": "02", "march": "03", "april": "04",
             "may": "05", "june": "06", "july": "07", "august": "08",
@@ -99,11 +103,11 @@ async def mcp_fetch(request: Request):
         start_date = f"{year}-{month_num}-01"
         end_date = f"{year}-{month_num}-30"
 
-        # Auth
+        # --- Auth ---
         access_token, api_domain = get_access_token()
         headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
 
-        # ==== Salary Query ====
+        # === Salary Query ===
         if "salary" in query or "wages" in query:
             expenses_url = f"{api_domain}/books/v3/expenses"
             bills_url = f"{api_domain}/books/v3/vendorbills"
@@ -114,11 +118,11 @@ async def mcp_fetch(request: Request):
                 "filter_by": "Category.All"
             }
 
-            exp = requests.get(expenses_url, headers=headers, params=params).json().get("expenses", [])
+            expenses = requests.get(expenses_url, headers=headers, params=params).json().get("expenses", [])
             bills = requests.get(bills_url, headers=headers, params=params).json().get("bills", [])
             salary_data = []
 
-            for e in exp:
+            for e in expenses:
                 if "salary" in e.get("description", "").lower() or "salary" in e.get("category_name", "").lower():
                     salary_data.append({
                         "source": "Expense",
@@ -146,7 +150,7 @@ async def mcp_fetch(request: Request):
                 }]
             }
 
-        # ==== P&L Query ====
+        # === Profit & Loss Query ===
         if "p&l" in query or "profit and loss" in query or "income" in query:
             url = f"{api_domain}/books/v3/reports/ProfitAndLoss"
             params = {
@@ -167,8 +171,7 @@ async def mcp_fetch(request: Request):
                 }]
             }
 
-        # Future logic will go here...
-
+        # === Placeholder for future logic ===
         return {
             "records": [{
                 "id": "result-001",
