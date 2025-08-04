@@ -6,6 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
+# ========== Configuration ==========
 CREDENTIALS_FILE = "zoho_credentials.json"
 ORG_IDS = {
     "formation": "60020606976",
@@ -13,7 +14,7 @@ ORG_IDS = {
     "third company": "YOUR_THIRD_COMPANY_ID"
 }
 
-# ========== AUTH HELPERS ==========
+# ========== Helper Functions ==========
 def load_credentials():
     if not os.path.exists(CREDENTIALS_FILE):
         raise Exception("Credentials not found. Please save them using /save_credentials")
@@ -32,7 +33,7 @@ def get_access_token():
     res = requests.post(url, params=params).json()
     return res["access_token"], creds["api_domain"]
 
-# ========== BASIC ROUTES ==========
+# ========== Basic Routes ==========
 @app.route("/health")
 def health():
     return {"status": "ok"}
@@ -48,132 +49,106 @@ def save_credentials():
         json.dump(data, f)
     return jsonify({"status": "Credentials saved successfully"})
 
-# ========== MCP ==========
-@app.route("/mcp/manifest")
+# ========== MCP Endpoints ==========
+@app.route("/mcp/manifest", methods=["GET"])
 def manifest():
     return jsonify({
         "name": "Zoho GPT Connector",
         "description": "Query your Zoho Books data using ChatGPT.",
         "version": "1.0",
-        "servers": ["https://zoho-gpt.onrender.com/mcp"],
         "tools": [{"type": "search"}, {"type": "fetch"}]
     })
 
 @app.route("/mcp/search", methods=["POST"])
 def mcp_search():
     query = request.json.get("query", "").lower()
-    org_name = "formation"
+    org_id = None
+    matched_org = "Unknown"
+
     for name in ORG_IDS:
         if name in query:
-            org_name = name
+            org_id = ORG_IDS[name]
+            matched_org = name
             break
+
     return jsonify({
         "results": [{
             "id": "result-001",
             "name": f"Zoho Query: {query}",
-            "description": f"Query for: {query} | Org: {org_name} | ID: {ORG_IDS.get(org_name)}"
+            "description": f"Query for: {query} | Org: {matched_org} | ID: {org_id or 'Not Found'}"
         }]
     })
 
 @app.route("/mcp/fetch", methods=["POST"])
 def mcp_fetch():
     try:
-        access_token, api_domain = get_access_token()
         ids = request.json.get("ids", [])
-        if not ids:
-            return jsonify({"error": "Missing query ID"}), 400
+        if not ids or ids[0] != "result-001":
+            return jsonify({"error": "Invalid or missing ID"}), 400
 
-        query = "salary of employees in formation for june 2025"  # Hardcoded for now
-        org_id = ORG_IDS["formation"]
+        query = "salary of employees in formation for june 2025"
+        access_token, api_domain = get_access_token()
         headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+        org_id = ORG_IDS.get("formation")
 
-        # === Logic 1: Salary
-        if "salary" in query:
-            url = f"{api_domain}/books/v3/expenses"
-            params = {
-                "organization_id": org_id,
-                "date_start": "2025-06-01",
-                "date_end": "2025-06-30",
-                "filter_by": "Category.All"
+        # ===================== EXPENSES =====================
+        expense_url = f"{api_domain}/books/v3/expenses"
+        exp_params = {
+            "organization_id": org_id,
+            "date_start": "2025-06-01",
+            "date_end": "2025-06-30",
+            "filter_by": "Category.All"
+        }
+        exp_res = requests.get(expense_url, headers=headers, params=exp_params).json()
+
+        expenses = [
+            {
+                "source": "Expense",
+                "employee": e.get("vendor_name"),
+                "amount": e.get("total"),
+                "date": e.get("date"),
+                "description": e.get("description")
             }
-            res = requests.get(url, headers=headers, params=params).json()
-            salary_exp = [
-                {
-                    "employee": e.get("vendor_name"),
-                    "amount": e.get("total"),
-                    "date": e.get("date"),
-                    "description": e.get("description")
-                }
-                for e in res.get("expenses", [])
-                if "salary" in e.get("description", "").lower()
-                or "salary" in e.get("category_name", "").lower()
-            ]
-            return jsonify({"records": [{
-                "id": "result-001",
-                "content": salary_exp or "No salary data found."
-            }]})
+            for e in exp_res.get("expenses", [])
+            if "salary" in e.get("description", "").lower() or "salary" in e.get("category_name", "").lower()
+        ]
 
-        # === Logic 2: Partner Withdrawals
-        elif "partner withdrawal" in query or "withdrawals" in query:
-            url = f"{api_domain}/books/v3/journals"
-            params = {
-                "organization_id": org_id,
-                "date_start": "2025-04-01",
-                "date_end": "2025-07-31"
+        # ===================== VENDOR BILLS =====================
+        bill_url = f"{api_domain}/books/v3/vendorbills"
+        bill_params = {
+            "organization_id": org_id,
+            "date_start": "2025-06-01",
+            "date_end": "2025-06-30"
+        }
+        bill_res = requests.get(bill_url, headers=headers, params=bill_params).json()
+
+        vendor_bills = [
+            {
+                "source": "Vendor Bill",
+                "employee": b.get("vendor_name"),
+                "amount": b.get("total"),
+                "date": b.get("date"),
+                "description": b.get("line_items", [{}])[0].get("name")
             }
-            res = requests.get(url, headers=headers, params=params).json()
-            withdrawals = [
-                {
-                    "partner": j.get("reference_number"),
-                    "amount": j.get("amount"),
-                    "date": j.get("date"),
-                    "description": j.get("description")
-                }
-                for j in res.get("journals", [])
-                if "withdrawal" in j.get("description", "").lower()
-            ]
-            return jsonify({"records": [{
-                "id": "result-001",
-                "content": withdrawals or "No partner withdrawals found."
-            }]})
+            for b in bill_res.get("bills", [])
+            if "salary" in b.get("line_items", [{}])[0].get("name", "").lower()
+        ]
 
-        # === Logic 3: Vendor Outstanding (basic)
-        elif "vendor outstanding" in query:
-            url = f"{api_domain}/books/v3/purchases"
-            params = {
-                "organization_id": org_id,
-                "status": "open"
-            }
-            res = requests.get(url, headers=headers, params=params).json()
-            outstanding = [
-                {
-                    "vendor": p.get("vendor_name"),
-                    "amount": p.get("balance"),
-                    "invoice": p.get("purchaseorder_number")
-                }
-                for p in res.get("purchaseorders", [])
-            ]
-            return jsonify({"records": [{
-                "id": "result-001",
-                "content": outstanding or "No vendor outstanding found."
-            }]})
+        combined = expenses + vendor_bills
+        combined = combined or [{"message": "No salary data found in June 2025 for Formation."}]
 
-        # === Logic 4: Monthly P&L Placeholder
-        elif "profit" in query or "p&l" in query:
-            return jsonify({"records": [{
+        return jsonify({
+            "records": [{
                 "id": "result-001",
-                "content": "Profit and Loss logic is being added next..."
-            }]})
-
-        # === Default Fallback
-        else:
-            return jsonify({"records": [{
-                "id": "result-001",
-                "content": f"No matching logic found for query: {query}"
-            }]})
+                "title": "Salary Data - Formation - June 2025",
+                "text": json.dumps(combined, indent=2),
+                "url": "https://books.zoho.in",
+                "metadata": {"source": "Zoho Books"}
+            }]
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=8000)
