@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Zoho Books Deep Connector",
+  "name_for_model": "zoho_books_mcp",
+  "description_for_human": "Query all Zoho Books data across your companies for anything you ask",
+  "description_for_model": "Use this tool to retrieve financial, accounting, and business data from Zoho Books via the user's connector. Supports things like P&L, salaries, withdrawals, loans, balances, vendor/client tracking, and more.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "mcp",
+    "url": "https://zoho-gpt.onrender.com/mcp/"
+  },
+  "logo_url": "https://raw.githubusercontent.com/github/explore/main/topics/zoho/zoho.png",
+  "contact_email": "hardykakadia@gmail.com",
+  "legal_info_url": "https://hardik.biz/legal"
+}
