@@ -5,7 +5,7 @@ import requests, os, json
 
 app = FastAPI()
 
-# === Enable CORS for MCP / ChatGPT access ===
+# === Enable CORS ===
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === Constants & Config ===
+# === Constants ===
 CREDENTIALS_FILE = "zoho_credentials.json"
 ORG_IDS = {
     "formation": "60020606976",
@@ -22,7 +22,7 @@ ORG_IDS = {
     "active services": "60019742072"
 }
 
-# === Credential Utilities ===
+# === Utilities ===
 def load_credentials():
     if not os.path.exists(CREDENTIALS_FILE):
         raise Exception("Missing zoho_credentials.json")
@@ -41,7 +41,12 @@ def get_access_token():
     res = requests.post(url, params=params).json()
     return res["access_token"], creds["api_domain"]
 
-# === Save Credentials Endpoint ===
+# === Health Check ===
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+# === Save Credentials ===
 @app.post("/save_credentials")
 async def save_credentials(request: Request):
     data = await request.json()
@@ -60,10 +65,13 @@ async def mcp_manifest():
         "name": "Zoho GPT Connector",
         "description": "Query your Zoho Books data using ChatGPT.",
         "version": "1.0",
-        "tools": [{"type": "search"}, {"type": "fetch"}]
+        "tools": [
+            {"type": "search"},
+            {"type": "fetch"}
+        ]
     }
 
-# === MCP Search Endpoint ===
+# === MCP Search ===
 last_query = {}
 
 @app.post("/mcp/search")
@@ -79,7 +87,7 @@ async def mcp_search(request: Request):
         }]
     }
 
-# === MCP Fetch Endpoint ===
+# === MCP Fetch ===
 @app.post("/mcp/fetch")
 async def mcp_fetch(request: Request):
     try:
@@ -87,11 +95,9 @@ async def mcp_fetch(request: Request):
         if not query:
             return {"error": "Missing query"}
 
-        # --- Detect org ---
         org_key = next((k for k in ORG_IDS if k in query), "formation")
         org_id = ORG_IDS[org_key]
 
-        # --- Detect date ---
         month_map = {
             "january": "01", "february": "02", "march": "03", "april": "04",
             "may": "05", "june": "06", "july": "07", "august": "08",
@@ -103,11 +109,10 @@ async def mcp_fetch(request: Request):
         start_date = f"{year}-{month_num}-01"
         end_date = f"{year}-{month_num}-30"
 
-        # --- Auth ---
         access_token, api_domain = get_access_token()
         headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
 
-        # === Salary Query ===
+        # Salary Query
         if "salary" in query or "wages" in query:
             expenses_url = f"{api_domain}/books/v3/expenses"
             bills_url = f"{api_domain}/books/v3/vendorbills"
@@ -143,14 +148,9 @@ async def mcp_fetch(request: Request):
                             "desc": line.get("description")
                         })
 
-            return {
-                "records": [{
-                    "id": "result-001",
-                    "content": salary_data or "No salary data found."
-                }]
-            }
+            return {"records": [{"id": "result-001", "content": salary_data or "No salary data found."}]}
 
-        # === Profit & Loss Query ===
+        # P&L Query
         if "p&l" in query or "profit and loss" in query or "income" in query:
             url = f"{api_domain}/books/v3/reports/ProfitAndLoss"
             params = {
@@ -171,18 +171,8 @@ async def mcp_fetch(request: Request):
                 }]
             }
 
-        # === Placeholder for future logic ===
-        return {
-            "records": [{
-                "id": "result-001",
-                "content": "Query received but no logic found yet."
-            }]
-        }
+        # Default fallback
+        return {"records": [{"id": "result-001", "content": "Query received but no logic found yet."}]}
 
     except Exception as e:
         return {"error": str(e)}
-
-# === Health Check Endpoint ===
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
