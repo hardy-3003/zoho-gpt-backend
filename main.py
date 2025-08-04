@@ -179,7 +179,7 @@ async def mcp_fetch(request: Request):
             }]
         }
 
-      except Exception as e:
+    except Exception as e:
         return {"error": str(e)}
 
 # === Health Check Endpoint ===
