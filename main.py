@@ -149,6 +149,15 @@ def mcp_fetch():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+        @app.post("/mcp/fetch")
+async def mcp_fetch(request: Request):
+    # your implementation here
+    return {...}
+
+@app.post("/mcp/search")
+async def mcp_search(request: Request):
+    # your implementation here
+    return {...}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
