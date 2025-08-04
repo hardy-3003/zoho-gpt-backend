@@ -55,6 +55,7 @@ def manifest():
         "name": "Zoho GPT Connector",
         "description": "Query your Zoho Books data using ChatGPT.",
         "version": "1.0",
+        "servers": ["https://zoho-gpt.onrender.com/mcp"],
         "tools": [{"type": "search"}, {"type": "fetch"}]
     })
 
