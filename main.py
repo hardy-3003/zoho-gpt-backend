@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import requests, os, json, datetime
+import requests, os, json, datetime, calendar
 
 app = FastAPI()
 
@@ -41,7 +41,7 @@ def get_access_token():
     }
     res = requests.post(url, params=params)
     if res.status_code != 200:
-        raise Exception("Failed to refresh Zoho access token")
+        raise Exception(f"Failed to refresh Zoho access token: {res.text}")
     token_data = res.json()
     return token_data["access_token"], creds["api_domain"]
 
@@ -49,6 +49,10 @@ def get_access_token():
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+@app.get("/")
+async def root():
+    return {"message": "Zoho GPT Connector is running"}
 
 # === Save Credentials ===
 @app.post("/save_credentials")
@@ -85,6 +89,7 @@ async def mcp_search(request: Request, authorization: str = Header(None)):
     body = await request.json()
     query = body.get("query", "").lower()
     last_query["text"] = query
+    print("Received query:", query)
     return {
         "results": [{
             "id": "result-001",
@@ -118,11 +123,13 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
         if month:
             month_num = month_map[month]
             start_date = f"{year}-{month_num}-01"
-            end_date = f"{year}-{month_num}-30"
+            end_day = calendar.monthrange(int(year), int(month_num))[1]
+            end_date = f"{year}-{month_num}-{end_day}"
         else:
             now = datetime.datetime.now()
             start_date = now.replace(day=1).strftime("%Y-%m-%d")
-            end_date = now.replace(day=28).strftime("%Y-%m-%d")
+            last_day = calendar.monthrange(now.year, now.month)[1]
+            end_date = now.replace(day=last_day).strftime("%Y-%m-%d")
 
         access_token, api_domain = get_access_token()
         headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
@@ -186,3 +193,8 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
 
     except Exception as e:
         return {"error": str(e)}
+
+# === Global Error Handler ===
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(status_code=500, content={"error": str(exc)})
