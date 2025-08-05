@@ -63,7 +63,7 @@ async def save_credentials(request: Request):
     return {"status": "Credentials saved successfully"}
 
 # === MCP Manifest ===
-@app.post("/mcp/manifest")
+@app.api_route("/mcp/manifest", methods=["GET", "POST"])
 async def mcp_manifest():
     return {
         "name": "Zoho GPT Connector",
@@ -120,7 +120,6 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
             start_date = f"{year}-{month_num}-01"
             end_date = f"{year}-{month_num}-30"
         else:
-            # Default to current month
             now = datetime.datetime.now()
             start_date = now.replace(day=1).strftime("%Y-%m-%d")
             end_date = now.replace(day=28).strftime("%Y-%m-%d")
