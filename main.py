@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import requests, os, json
+import requests, os, json, datetime
 
 app = FastAPI()
 
@@ -39,8 +39,11 @@ def get_access_token():
         "client_secret": creds["client_secret"],
         "grant_type": "refresh_token"
     }
-    res = requests.post(url, params=params).json()
-    return res["access_token"], creds["api_domain"]
+    res = requests.post(url, params=params)
+    if res.status_code != 200:
+        raise Exception("Failed to refresh Zoho access token")
+    token_data = res.json()
+    return token_data["access_token"], creds["api_domain"]
 
 # === Health Check ===
 @app.get("/health")
@@ -104,17 +107,23 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
         org_key = next((k for k in ORG_IDS if k in query), "formation")
         org_id = ORG_IDS[org_key]
 
-        # Month + Date parsing
+        # Date Parsing
         month_map = {
             "january": "01", "february": "02", "march": "03", "april": "04",
             "may": "05", "june": "06", "july": "07", "august": "08",
             "september": "09", "october": "10", "november": "11", "december": "12"
         }
         year = "2025"
-        month = next((m for m in month_map if m in query), "06")
-        month_num = month_map[month]
-        start_date = f"{year}-{month_num}-01"
-        end_date = f"{year}-{month_num}-30"
+        month = next((m for m in month_map if m in query), None)
+        if month:
+            month_num = month_map[month]
+            start_date = f"{year}-{month_num}-01"
+            end_date = f"{year}-{month_num}-30"
+        else:
+            # Default to current month
+            now = datetime.datetime.now()
+            start_date = now.replace(day=1).strftime("%Y-%m-%d")
+            end_date = now.replace(day=28).strftime("%Y-%m-%d")
 
         access_token, api_domain = get_access_token()
         headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
@@ -174,7 +183,7 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
                 }]
             }
 
-        return {"records": [{"id": "result-001", "content": "Query received but no logic found yet."}]}
+        return {"records": [{"id": "result-001", "content": "Query received but no matching logic found yet."}]}
 
     except Exception as e:
         return {"error": str(e)}
