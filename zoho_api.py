@@ -1,12 +1,12 @@
 import os
 import requests
 
-def fetch_invoices(organization_id, start_date, end_date):
+def fetch_invoices(api_domain, access_token, organization_id, start_date, end_date):
     headers = {
-        "Authorization": f"Zoho-oauthtoken {os.getenv('ZOHO_ACCESS_TOKEN')}"
+        "Authorization": f"Zoho-oauthtoken {access_token}"
     }
 
-    url = f"https://books.zoho.in/api/v3/invoices"
+    url = f"{api_domain}/books/v3/invoices"
     params = {
         "organization_id": organization_id,
         "date_start": start_date,
@@ -15,4 +15,6 @@ def fetch_invoices(organization_id, start_date, end_date):
     }
 
     response = requests.get(url, headers=headers, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch invoices: {response.text}")
     return response.json()
