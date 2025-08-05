@@ -62,8 +62,8 @@ async def save_credentials(request: Request):
         json.dump(data, f)
     return {"status": "Credentials saved successfully"}
 
-# === MCP Manifest (GET + POST) ===
-@app.api_route("/mcp/manifest", methods=["GET", "POST"])
+# === MCP Manifest ===
+@app.api_route("/mcp/manifest", methods=["GET", "POST", "HEAD"])
 async def mcp_manifest():
     return {
         "name": "Zoho GPT Connector",
