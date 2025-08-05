@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import requests, os, json
 
 app = FastAPI()
 
-# === Enable CORS ===
+# === CORS Middleware ===
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,8 +21,9 @@ ORG_IDS = {
     "shree sai engineering": "60018074998",
     "active services": "60019742072"
 }
+MCP_SECRET = os.getenv("MCP_SECRET", "default-secret")
 
-# === Utilities ===
+# === Helpers ===
 def load_credentials():
     if not os.path.exists(CREDENTIALS_FILE):
         raise Exception("Missing zoho_credentials.json")
@@ -71,11 +72,13 @@ async def mcp_manifest():
         ]
     }
 
-# === MCP Search ===
+# === Search ===
 last_query = {}
 
 @app.post("/mcp/search")
-async def mcp_search(request: Request):
+async def mcp_search(request: Request, authorization: str = Header(None)):
+    if authorization != f"Bearer {MCP_SECRET}":
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
     body = await request.json()
     query = body.get("query", "").lower()
     last_query["text"] = query
@@ -87,9 +90,12 @@ async def mcp_search(request: Request):
         }]
     }
 
-# === MCP Fetch ===
+# === Fetch ===
 @app.post("/mcp/fetch")
-async def mcp_fetch(request: Request):
+async def mcp_fetch(request: Request, authorization: str = Header(None)):
+    if authorization != f"Bearer {MCP_SECRET}":
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
     try:
         query = last_query.get("text", "").lower()
         if not query:
@@ -98,6 +104,7 @@ async def mcp_fetch(request: Request):
         org_key = next((k for k in ORG_IDS if k in query), "formation")
         org_id = ORG_IDS[org_key]
 
+        # Month + Date parsing
         month_map = {
             "january": "01", "february": "02", "march": "03", "april": "04",
             "may": "05", "june": "06", "july": "07", "august": "08",
@@ -105,14 +112,14 @@ async def mcp_fetch(request: Request):
         }
         year = "2025"
         month = next((m for m in month_map if m in query), "06")
-        month_num = month_map.get(month, "06")
+        month_num = month_map[month]
         start_date = f"{year}-{month_num}-01"
         end_date = f"{year}-{month_num}-30"
 
         access_token, api_domain = get_access_token()
         headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
 
-        # Salary Query
+        # Salary
         if "salary" in query or "wages" in query:
             expenses_url = f"{api_domain}/books/v3/expenses"
             bills_url = f"{api_domain}/books/v3/vendorbills"
@@ -150,14 +157,10 @@ async def mcp_fetch(request: Request):
 
             return {"records": [{"id": "result-001", "content": salary_data or "No salary data found."}]}
 
-        # P&L Query
+        # Profit & Loss
         if "p&l" in query or "profit and loss" in query or "income" in query:
             url = f"{api_domain}/books/v3/reports/ProfitAndLoss"
-            params = {
-                "organization_id": org_id,
-                "start_date": start_date,
-                "end_date": end_date
-            }
+            params = {"organization_id": org_id, "start_date": start_date, "end_date": end_date}
             report = requests.get(url, headers=headers, params=params).json()
             summary = report.get("report", {}).get("summary", {})
             return {
@@ -171,7 +174,6 @@ async def mcp_fetch(request: Request):
                 }]
             }
 
-        # Default fallback
         return {"records": [{"id": "result-001", "content": "Query received but no logic found yet."}]}
 
     except Exception as e:
