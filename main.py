@@ -1,7 +1,19 @@
 from fastapi import FastAPI, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import requests, os, json, datetime, calendar
+from fastapi.responses import JSONResponse, StreamingResponse
+import requests, os, json, datetime, calendar, re
+
+from core.operate_base import OperateInput
+from core.registry import route
+
+from core.registry import _REGISTRY  # add near other imports at the top if not present
+from core.logic_loader import load_all_logics, plan_from_query
+
+# Import modules for side-effects so they self-register in the registry
+# (do not remove even if they look unused)
+import operate.salary_operate  # noqa: F401
+import operate.pnl_operate  # noqa: F401
+import operate.withdrawals_operate  # noqa: F401
 
 app = FastAPI()
 
@@ -18,10 +30,12 @@ app.add_middleware(
 CREDENTIALS_FILE = "zoho_credentials.json"
 ORG_IDS = {
     "formation": "60020606976",
-    "shree sai engineering": "60018074998",
-    "active services": "60019742072"
+    "active services": "60020679007",
+    "shree sai": "60020561855",
+    "shree sai engineering": "60020561855",
 }
 MCP_SECRET = os.getenv("MCP_SECRET", "default-secret")
+
 
 # === Helpers ===
 def load_credentials():
@@ -30,6 +44,7 @@ def load_credentials():
     with open(CREDENTIALS_FILE) as f:
         return json.load(f)
 
+
 def get_access_token():
     creds = load_credentials()
     url = "https://accounts.zoho.in/oauth/v2/token"
@@ -37,34 +52,51 @@ def get_access_token():
         "refresh_token": creds["refresh_token"],
         "client_id": creds["client_id"],
         "client_secret": creds["client_secret"],
-        "grant_type": "refresh_token"
+        "grant_type": "refresh_token",
     }
-    res = requests.post(url, params=params)
+    res = requests.post(url, data=params)
     if res.status_code != 200:
         raise Exception(f"Failed to refresh Zoho access token: {res.text}")
     token_data = res.json()
-    return token_data["access_token"], creds["api_domain"]
+    api_domain = creds.get("api_domain", "https://www.zohoapis.in")
+    if api_domain and not api_domain.startswith("http"):
+        api_domain = f"https://{api_domain}"
+    return token_data["access_token"], api_domain
+
 
 # === Health Check ===
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
 
+
 @app.get("/")
 async def root():
     return {"message": "Zoho GPT Connector is running"}
 
+
 # === Save Credentials ===
 @app.post("/save_credentials")
-async def save_credentials(request: Request):
+async def save_credentials(request: Request, authorization: str = Header(None)):
+    if authorization != f"Bearer {MCP_SECRET}":
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
     data = await request.json()
     required = ["client_id", "client_secret", "refresh_token", "api_domain"]
     for field in required:
         if field not in data:
-            return JSONResponse(status_code=400, content={"error": f"Missing field: {field}"})
+            return JSONResponse(
+                status_code=400, content={"error": f"Missing field: {field}"}
+            )
     with open(CREDENTIALS_FILE, "w") as f:
         json.dump(data, f)
     return {"status": "Credentials saved successfully"}
+
+
+# === Debug: List registered ops ===
+@app.get("/debug/ops")
+async def debug_ops():
+    return {"registered": len(_REGISTRY)}
+
 
 # === MCP Manifest ===
 @app.api_route("/mcp/manifest", methods=["GET", "POST", "HEAD"])
@@ -73,14 +105,13 @@ async def mcp_manifest():
         "name": "Zoho GPT Connector",
         "description": "Query your Zoho Books data using ChatGPT.",
         "version": "1.0",
-        "tools": [
-            {"type": "search"},
-            {"type": "fetch"}
-        ]
+        "tools": [{"type": "search"}, {"type": "fetch"}, {"type": "stream"}],
     }
+
 
 # === Search ===
 last_query = {}
+
 
 @app.post("/mcp/search")
 async def mcp_search(request: Request, authorization: str = Header(None)):
@@ -89,14 +120,12 @@ async def mcp_search(request: Request, authorization: str = Header(None)):
     body = await request.json()
     query = body.get("query", "").lower()
     last_query["text"] = query
-    print("Received query:", query)
-    return {
-        "results": [{
-            "id": "result-001",
-            "name": f"Zoho Query: {query}",
-            "description": f"Query for: {query}"
-        }]
-    }
+    # ensure logics are loaded for planning
+    load_all_logics()
+    plan = plan_from_query(query)
+    last_query["plan"] = plan
+    return {"results": [{"id": "result-001", "name": "Plan", "description": plan}]}
+
 
 # === Fetch ===
 @app.post("/mcp/fetch")
@@ -109,16 +138,37 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
         if not query:
             return {"error": "Missing query"}
 
+        # Org selection by fuzzy match
         org_key = next((k for k in ORG_IDS if k in query), "formation")
         org_id = ORG_IDS[org_key]
 
-        # Date Parsing
+        # Date parsing (simple month/year)
         month_map = {
-            "january": "01", "february": "02", "march": "03", "april": "04",
-            "may": "05", "june": "06", "july": "07", "august": "08",
-            "september": "09", "october": "10", "november": "11", "december": "12"
+            "january": "01",
+            "february": "02",
+            "march": "03",
+            "april": "04",
+            "may": "05",
+            "june": "06",
+            "july": "07",
+            "august": "08",
+            "september": "09",
+            "october": "10",
+            "november": "11",
+            "december": "12",
         }
-        year = "2025"
+        # --- dynamic year detection ---
+        year_match = re.search(r"\b(20\d{2})\b", query)
+        year = year_match.group(1) if year_match else str(datetime.datetime.now().year)
+
+        # two-digit year support (e.g., '24 -> 2024) with a simple cutoff
+        if not year_match:
+            short = re.search(r"\b(\d{2})\b", query)
+            if short:
+                yy = int(short.group(1))
+                base = 2000 if yy < 70 else 1900
+                year = str(base + yy)
+        # --- end dynamic year detection ---
         month = next((m for m in month_map if m in query), None)
         if month:
             month_num = month_map[month]
@@ -131,70 +181,96 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
             last_day = calendar.monthrange(now.year, now.month)[1]
             end_date = now.replace(day=last_day).strftime("%Y-%m-%d")
 
-        access_token, api_domain = get_access_token()
+        # Try to get real token; fallback to dry-run for local testing
+        try:
+            access_token, api_domain = get_access_token()
+        except Exception:
+            access_token, api_domain = ("dry-run", "https://www.zohoapis.in")
         headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
 
-        # Salary
-        if "salary" in query or "wages" in query:
-            expenses_url = f"{api_domain}/books/v3/expenses"
-            bills_url = f"{api_domain}/books/v3/vendorbills"
-            params = {
-                "organization_id": org_id,
-                "date_start": start_date,
-                "date_end": end_date,
-                "filter_by": "Category.All"
-            }
+        plan = last_query.get("plan")
+        op_in = OperateInput(
+            org_id=org_id,
+            start_date=start_date,
+            end_date=end_date,
+            headers=headers,
+            api_domain=api_domain,
+            query=query,
+        )
 
-            expenses = requests.get(expenses_url, headers=headers, params=params).json().get("expenses", [])
-            bills = requests.get(bills_url, headers=headers, params=params).json().get("bills", [])
-            salary_data = []
+        # Orchestrator plan
+        if plan and plan.get("type") == "orchestrator" and plan.get("name") == "mis":
+            from orchestrators.mis_orchestrator import run_mis
 
-            for e in expenses:
-                if "salary" in e.get("description", "").lower() or "salary" in e.get("category_name", "").lower():
-                    salary_data.append({
-                        "source": "Expense",
-                        "employee": e.get("vendor_name"),
-                        "amount": e.get("total"),
-                        "date": e.get("date"),
-                        "desc": e.get("description")
-                    })
-
-            for b in bills:
-                for line in b.get("line_items", []):
-                    if "salary" in line.get("description", "").lower():
-                        salary_data.append({
-                            "source": "Vendor Bill",
-                            "employee": b.get("vendor_name"),
-                            "amount": line.get("item_total"),
-                            "date": b.get("date"),
-                            "desc": line.get("description")
-                        })
-
-            return {"records": [{"id": "result-001", "content": salary_data or "No salary data found."}]}
-
-        # Profit & Loss
-        if "p&l" in query or "profit and loss" in query or "income" in query:
-            url = f"{api_domain}/books/v3/reports/ProfitAndLoss"
-            params = {"organization_id": org_id, "start_date": start_date, "end_date": end_date}
-            report = requests.get(url, headers=headers, params=params).json()
-            summary = report.get("report", {}).get("summary", {})
+            out = run_mis(op_in, plan.get("sections", []))
             return {
-                "records": [{
-                    "id": "result-001",
-                    "content": {
-                        "Revenue": summary.get("total_income", {}).get("value", 0),
-                        "Expenses": summary.get("total_expense", {}).get("value", 0),
-                        "Profit": summary.get("net_profit", {}).get("value", 0)
-                    }
-                }]
+                "records": [
+                    {"id": "result-001", "content": out.content, "meta": out.meta}
+                ]
             }
 
-        return {"records": [{"id": "result-001", "content": "Query received but no matching logic found yet."}]}
+        # Logic plan: execute L-### handlers
+        if plan and plan.get("type") == "logic" and plan.get("logic_ids"):
+            from core.logic_loader import LOGIC_REGISTRY
 
+            payload = {
+                "org_id": org_id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "headers": headers,
+                "api_domain": api_domain,
+                "query": query,
+            }
+            results = {}
+            for lid in plan.get("logic_ids", []):
+                entry = LOGIC_REGISTRY.get(lid)
+                if not entry:
+                    results[lid] = {"error": "logic not found"}
+                    continue
+                handler, meta = entry
+                try:
+                    results[lid] = handler(payload)
+                except Exception as e:
+                    results[lid] = {"error": str(e)}
+            return {
+                "records": [
+                    {
+                        "id": "result-001",
+                        "content": results,
+                        "meta": {
+                            "operator": "logic_runner",
+                            "logic_ids": plan.get("logic_ids", []),
+                        },
+                    }
+                ]
+            }
+
+        # Fallback: legacy keyword router (operate/*)
+        op = route(query)
+        if op is not None:
+            out = op(op_in)
+            return {
+                "records": [
+                    {"id": "result-001", "content": out.content, "meta": out.meta}
+                ]
+            }
+
+        return {
+            "records": [{"id": "result-001", "content": "No matching logic or plan."}]
+        }
     except Exception as e:
         return {"error": str(e)}
 
-# === Global Error Handler ===
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(status_code=500, content={"error": str(exc)})
+
+# Optional: simple SSE stream for progress (placeholder)
+@app.post("/mcp/stream")
+async def mcp_stream(request: Request, authorization: str = Header(None)):
+    if authorization != f"Bearer {MCP_SECRET}":
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    async def event_generator():
+        yield 'data: {"stage": "planning"}\n\n'
+        yield 'data: {"stage": "executing"}\n\n'
+        yield 'data: {"stage": "done"}\n\n'
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
