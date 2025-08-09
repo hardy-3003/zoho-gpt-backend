@@ -21,3 +21,12 @@ def write_event(stream: str, data: Dict[str, Any]) -> str:
     with open(file_path, "w") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return file_path
+
+
+def append_event(logic_id: str, data: Dict[str, Any]) -> str:
+    """Compat helper expected by some logics.
+
+    Stores under data/history/logic_{logic_id}/<ts>.json
+    """
+    stream = f"logic_{logic_id}"
+    return write_event(stream, data)
