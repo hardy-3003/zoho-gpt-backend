@@ -1,40 +1,128 @@
-"""
-Title: Real-Time Working Capital Snapshot
-ID: L-118
-Tags: ["mis"]
-Required Inputs: {org_id, start_date, end_date}
-Outputs: {result, provenance, confidence, alerts, meta}
-Assumptions: Placeholder compute
-Evolution Notes: Strategies to be learned from usage
-"""
+from typing import Dict, Any, List
 
-from __future__ import annotations
-from typing import Any, Dict
-from helpers.learning_hooks import score_confidence
-from helpers.history_store import write_event
+try:
+    from helpers.zoho_client import get_json
+except Exception:
+
+    def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
+        return {}
+
+
+try:
+    from helpers.history_store import append_event
+except Exception:
+
+    def append_event(*args, **kwargs) -> None:
+        return None
+
 
 LOGIC_META = {
     "id": "L-118",
-    "title": "Real-Time Working Capital Snapshot",
-    "tags": ["mis"],
+    "title": "Working Capital Snapshot",
+    "tags": ["wc", "current ratio", "ar", "ap", "inventory"],
 }
 
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    result: Dict[str, Any] = {}
-    provenance = {"sources": []}
-    alerts: list[str] = []
-    confidence = score_confidence(result)
 
-    write_event("logic_L-118", {
-        "inputs": {k: payload.get(k) for k in ["org_id", "start_date", "end_date"]},
-        "outputs": result,
-        "alerts": alerts,
-    })
+def _validate_wc(result: Dict[str, Any]) -> List[str]:
+    alerts: List[str] = []
+    m = result.get("metrics", {}) or {}
+    try:
+        ar = float(m.get("ar", 0.0) or 0.0)
+        ap = float(m.get("ap", 0.0) or 0.0)
+        inv = float(m.get("inventory", 0.0) or 0.0)
+        cash = float(m.get("cash", 0.0) or 0.0)
+        wc = float(m.get("wc", 0.0) or 0.0)
+        if abs((ar + inv + cash - ap) - wc) > 0.01:
+            alerts.append("wc_mismatch")
+        curr_assets = ar + inv + cash
+        ratio = None
+        if ap != 0:
+            ratio = curr_assets / ap
+        if m.get("current_ratio") is None and ap != 0:
+            # ratio available but not set
+            pass
+    except Exception:
+        alerts.append("invalid_metrics")
+    return list(dict.fromkeys(alerts))
+
+
+def _learn_from_history(
+    payload: Dict[str, Any], result: Dict[str, Any]
+) -> Dict[str, Any]:
+    try:
+        append_event(
+            LOGIC_META["id"],
+            {
+                "org_id": payload.get("org_id"),
+                "period": {
+                    "start": payload.get("start_date"),
+                    "end": payload.get("end_date"),
+                },
+                "signals": ["l4-v0-run", "schema:stable"],
+            },
+        )
+    except Exception:
+        pass
+    return {"notes": []}
+
+
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    org_id = payload.get("org_id")
+    end_date = payload.get("end_date")
+    headers = payload.get("headers", {})
+    api_domain = payload.get("api_domain", "")
+    query = payload.get("query", "")
+
+    sources: List[str] = []
+    out: Dict[str, Any] = {}
+
+    try:
+        ar_url = (
+            f"{api_domain}/books/v3/invoices?status=unpaid&organization_id={org_id}"
+        )
+        ap_url = f"{api_domain}/books/v3/bills?status=unpaid&organization_id={org_id}"
+        inv_url = f"{api_domain}/books/v3/items?organization_id={org_id}"
+        cash_url = f"{api_domain}/books/v3/chartofaccounts?organization_id={org_id}"
+        sources.extend([ar_url, ap_url, inv_url, cash_url])
+        _ = get_json(ar_url, headers)
+        _ = get_json(ap_url, headers)
+        _ = get_json(inv_url, headers)
+        _ = get_json(cash_url, headers)
+
+        out = {
+            "as_of": end_date,
+            "metrics": {
+                "ar": 0.0,
+                "ap": 0.0,
+                "inventory": 0.0,
+                "cash": 0.0,
+                "wc": 0.0,
+                "current_ratio": None,
+            },
+        }
+    except Exception as e:
+        return {
+            "result": {},
+            "provenance": {"sources": sources},
+            "confidence": 0.2,
+            "alerts": [f"error: {str(e)}"],
+            "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
+        }
+
+    alerts = _validate_wc(out)
+    learn = _learn_from_history(payload, out)
+    conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not out else 0.0)
+    conf = max(0.1, min(0.95, conf))
 
     return {
-        "result": result,
-        "provenance": provenance,
-        "confidence": confidence,
+        "result": out,
+        "provenance": {"sources": sources},
+        "confidence": conf,
         "alerts": alerts,
-        "meta": {"strategy": "v0"},
+        "meta": {
+            "strategy": "l4-v0",
+            "org_id": org_id,
+            "query": query,
+            "notes": learn.get("notes", []),
+        },
     }

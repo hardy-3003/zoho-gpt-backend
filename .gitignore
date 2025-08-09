@@ -1,0 +1,22 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtualenvs & OS junk
+venv/
+.venv/
+.DS_Store
+
+# Runtime data and test caches
+data/history/
+tests/**/__pycache__/
+**/__pycache__/
+*.pytest_cache/
+.pytest_cache/
+
+# Local notes
+deep_spec_audit.json
+deep_spec_summary.md
+l4_wave1_and_scaffold.txt
+wave2_L4_5logics.txt

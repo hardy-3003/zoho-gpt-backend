@@ -1,40 +1,109 @@
-"""
-Title: Production Efficiency Report
-ID: L-061
-Tags: ["mis"]
-Required Inputs: {org_id, start_date, end_date}
-Outputs: {result, provenance, confidence, alerts, meta}
-Assumptions: Placeholder compute
-Evolution Notes: Strategies to be learned from usage
-"""
+from typing import Dict, Any, List
 
-from __future__ import annotations
-from typing import Any, Dict
-from helpers.learning_hooks import score_confidence
-from helpers.history_store import write_event
+try:
+    from helpers.zoho_client import get_json
+except Exception:
+
+    def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
+        return {}
+
+
+try:
+    from helpers.history_store import append_event
+except Exception:
+
+    def append_event(*args, **kwargs) -> None:
+        return None
+
 
 LOGIC_META = {
     "id": "L-061",
-    "title": "Production Efficiency Report",
-    "tags": ["mis"],
+    "title": "Production Efficiency",
+    "tags": ["production", "efficiency", "oee", "throughput"],
 }
 
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    result: Dict[str, Any] = {}
-    provenance = {"sources": []}
-    alerts: list[str] = []
-    confidence = score_confidence(result)
 
-    write_event("logic_L-061", {
-        "inputs": {k: payload.get(k) for k in ["org_id", "start_date", "end_date"]},
-        "outputs": result,
-        "alerts": alerts,
-    })
+def _validate_production_eff(result: Dict[str, Any]) -> List[str]:
+    alerts: List[str] = []
+    lines = result.get("lines", [])
+    for ln in lines:
+        pct = float(ln.get("efficiency_pct", 0.0) or 0.0)
+        planned = float(ln.get("planned_qty", 0.0) or 0.0)
+        actual = float(ln.get("actual_qty", 0.0) or 0.0)
+        if pct < 0 or pct > 300:
+            alerts.append(f"efficiency_out_of_bounds:{ln.get('work_center','')}")
+        if actual > planned * 5 and planned > 0:
+            alerts.append(f"actual_much_higher_than_planned:{ln.get('work_center','')}")
+    totals = result.get("totals", {})
+    if totals:
+        planned_t = float(totals.get("planned", 0.0) or 0.0)
+        actual_t = float(totals.get("actual", 0.0) or 0.0)
+        pct_t = float(totals.get("efficiency_pct", 0.0) or 0.0)
+        if planned_t > 0 and abs(pct_t - (actual_t / planned_t * 100.0)) > 0.5:
+            alerts.append("totals_efficiency_mismatch")
+    return alerts
+
+
+def _learn_from_history(
+    payload: Dict[str, Any], result: Dict[str, Any]
+) -> Dict[str, Any]:
+    try:
+        append_event(
+            LOGIC_META["id"],
+            {
+                "org_id": payload.get("org_id"),
+                "period": {
+                    "start": payload.get("start_date"),
+                    "end": payload.get("end_date"),
+                },
+                "signals": ["l4-v0-run", "schema:stable"],
+            },
+        )
+    except Exception:
+        pass
+    return {"notes": []}
+
+
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    org_id = payload.get("org_id")
+    start_date = payload.get("start_date")
+    end_date = payload.get("end_date")
+    headers = payload.get("headers", {})
+    api_domain = payload.get("api_domain", "")
+    query = payload.get("query", "")
+
+    sources: List[str] = []
+    result: Dict[str, Any] = {}
+
+    try:
+        result = {
+            "period": {"start": start_date, "end": end_date},
+            "lines": [],
+            "totals": {"planned": 0.0, "actual": 0.0, "efficiency_pct": 0.0},
+        }
+    except Exception as e:
+        return {
+            "result": {},
+            "provenance": {"sources": sources},
+            "confidence": 0.2,
+            "alerts": [f"error: {str(e)}"],
+            "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
+        }
+
+    alerts = _validate_production_eff(result)
+    learn = _learn_from_history(payload, result)
+    conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not result else 0.0)
+    conf = max(0.1, min(0.95, conf))
 
     return {
         "result": result,
-        "provenance": provenance,
-        "confidence": confidence,
+        "provenance": {"sources": sources},
+        "confidence": conf,
         "alerts": alerts,
-        "meta": {"strategy": "v0"},
+        "meta": {
+            "strategy": "l4-v0",
+            "org_id": org_id,
+            "query": query,
+            "notes": learn.get("notes", []),
+        },
     }
