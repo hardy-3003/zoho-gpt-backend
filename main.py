@@ -259,7 +259,10 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
             "records": [{"id": "result-001", "content": "No matching logic or plan."}]
         }
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": {"type": "internal_error", "message": str(e)}})
+        return JSONResponse(
+            status_code=500,
+            content={"error": {"type": "internal_error", "message": str(e)}},
+        )
 
 
 # Optional: simple SSE stream for progress (placeholder)

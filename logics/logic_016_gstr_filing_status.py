@@ -49,9 +49,13 @@ def _validate_gstr(result: Dict[str, Any]) -> List[str]:
 
 
 def _learn_from_history(
-    payload: Dict[str, Any], result: Dict[str, Any]
+    payload: Dict[str, Any], result: Dict[str, Any], alerts: List[str]
 ) -> Dict[str, Any]:
+    signals: List[str] = ["l4-v0-run", "schema:stable"]
     try:
+        returns = result.get("returns", []) or []
+        if any((r.get("status") == "pending") for r in returns):
+            signals.append("pending:>0")
         append_event(
             LOGIC_META["id"],
             {
@@ -60,12 +64,13 @@ def _learn_from_history(
                     "start": payload.get("start_date"),
                     "end": payload.get("end_date"),
                 },
-                "signals": ["l4-v0-run", "schema:stable"],
+                "signals": signals,
+                "summary": {"size": len(returns)},
             },
         )
     except Exception:
         pass
-    return {"notes": []}
+    return {"notes": signals[:3]}
 
 
 def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -101,15 +106,23 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
             "confidence": 0.2,
             "alerts": [f"error: {str(e)}"],
             "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
-            "error": str(e),
         }
 
     alerts = _validate_gstr(result)
-    learn = _learn_from_history(payload, result)
+    learn = _learn_from_history(payload, result, alerts)
 
     base_conf = 0.6
     if alerts:
         base_conf -= 0.15
+    # structural empty: no returns and all summary zeros
+    try:
+        if (
+            not (result.get("returns") or [])
+            and sum(result.get("summary", {}).values()) == 0
+        ):
+            base_conf -= 0.10
+    except Exception:
+        pass
 
     return {
         "result": result,

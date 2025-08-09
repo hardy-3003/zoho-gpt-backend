@@ -19,7 +19,7 @@ Owner: Agent • Branch: `feature/sow-protocol-alignment` • Tag: `pre_sow_prot
 - Missing dirs: `docs/`, `docs/CHANGELOG.md`, `docs/learned_formats/`, `prompts/`, `config/regulations/`.
 - MCP manifest file exists as `mcp_manifest.json`, but no `/mcp/` folder. Endpoint behavior present in `main.py` (OK) but needs typed errors and auth confirmed. `save_credentials` already gated by `MCP_SECRET` (OK).
 - `helpers/schema_registry.py` minimal; needs per-logic schemas and registration.
-- Many logic files exist (1–180 present). Need contract conformance pass and annotations where required.
+- Many logic files exist (1–200 present). Need contract conformance pass and annotations where required.
 - Tests: only `tests/test_manifest.py`. Need unit test suites per logic and integration tests.
 
 ## Execution Plan by Phases

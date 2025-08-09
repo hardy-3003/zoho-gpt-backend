@@ -1,40 +1,136 @@
-"""
-Title: Investment vs Working Capital Allocator
-ID: L-167
-Tags: ["mis"]
-Required Inputs: {org_id, start_date, end_date}
-Outputs: {result, provenance, confidence, alerts, meta}
-Assumptions: Placeholder compute
-Evolution Notes: Strategies to be learned from usage
-"""
+from typing import Dict, Any, List, Optional
 
-from __future__ import annotations
-from typing import Any, Dict
-from helpers.learning_hooks import score_confidence
-from helpers.history_store import write_event
+try:
+    from helpers.zoho_client import get_json
+except Exception:
+
+    def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
+        return {}
+
+
+try:
+    from helpers.history_store import append_event
+except Exception:
+
+    def append_event(*args, **kwargs) -> None:
+        return None
+
 
 LOGIC_META = {
     "id": "L-167",
     "title": "Investment vs Working Capital Allocator",
-    "tags": ["mis"],
+    "tags": ["allocator", "cash", "planning"],
 }
 
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    result: Dict[str, Any] = {}
-    provenance = {"sources": []}
-    alerts: list[str] = []
-    confidence = score_confidence(result)
 
-    write_event("logic_L-167", {
-        "inputs": {k: payload.get(k) for k in ["org_id", "start_date", "end_date"]},
-        "outputs": result,
-        "alerts": alerts,
-    })
+def _validate_iwca(result: Dict[str, Any]) -> List[str]:
+    alerts: List[str] = []
+    inputs = result.get("inputs") or {}
+    advice = result.get("advice") or {}
+    cash = inputs.get("cash")
+    invest = float(advice.get("invest", 0.0) or 0.0)
+    retain = float(advice.get("retain_wc", 0.0) or 0.0)
+    if invest < 0 or retain < 0:
+        alerts.append("negative_allocation")
+    if isinstance(cash, (int, float)):
+        if invest + retain > float(cash) + 1e-6:
+            alerts.append("exceeds_cash")
+    return list(dict.fromkeys(alerts))
+
+
+def _learn_from_history(
+    payload: Dict[str, Any], result: Dict[str, Any], alerts: List[str]
+) -> Dict[str, Any]:
+    signals: List[str] = ["l4-v0-run", "schema:stable"]
+    try:
+        inputs = result.get("inputs") or {}
+        cash = float(inputs.get("cash") or 0.0)
+        invest = float((result.get("advice") or {}).get("invest") or 0.0)
+        pct = int(round((invest / cash) * 100)) if cash > 0 else 0
+        signals.append(f"invest_pct:{pct}")
+        # simple wc days band using bounds
+        bounds = result.get("bounds") or {}
+        wc_days = int(bounds.get("min_wc_days") or 0)
+        signals.append(f"wc_days:>={wc_days}")
+        if alerts:
+            signals.append("alert:present")
+    except Exception:
+        pass
+    try:
+        append_event(
+            LOGIC_META["id"],
+            {
+                "org_id": payload.get("org_id"),
+                "period": {
+                    "start": payload.get("start_date"),
+                    "end": payload.get("end_date"),
+                },
+                "signals": signals,
+            },
+        )
+    except Exception:
+        pass
+    return {"notes": signals[:3]}
+
+
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    org_id: Optional[str] = payload.get("org_id")
+    start_date: Optional[str] = payload.get("start_date")
+    end_date: Optional[str] = payload.get("end_date")
+    headers: Dict[str, str] = payload.get("headers", {})
+    api_domain: str = payload.get("api_domain", "")
+    query: str = payload.get("query", "")
+
+    sources: List[str] = []
+    result: Dict[str, Any] = {}
+
+    try:
+        # Inputs are currently stubbed (deterministic)
+        inputs = {"cash": None, "ar": None, "ap": None, "inventory": None}
+        bounds = {"min_wc_days": 45, "cap_invest_pct": 40.0}
+        # Conservative split when cash unknown: all to WC
+        advice = {
+            "invest": 0.0,
+            "retain_wc": 0.0,
+            "rationale": ["Insufficient cash inputs; retain for WC"],
+        }
+        if isinstance(inputs.get("cash"), (int, float)):
+            cash = float(inputs["cash"])  # currently None → skip branch
+            cap_invest = cash * (bounds["cap_invest_pct"] / 100.0)
+            advice = {
+                "invest": round(max(0.0, cap_invest), 2),
+                "retain_wc": round(max(0.0, cash - cap_invest), 2),
+                "rationale": ["Cap investment at policy %", "Retain remainder for WC"],
+            }
+        result = {
+            "period": {"start": start_date, "end": end_date},
+            "inputs": inputs,
+            "advice": advice,
+            "bounds": bounds,
+        }
+    except Exception as e:
+        return {
+            "result": {},
+            "provenance": {"sources": sources},
+            "confidence": 0.2,
+            "alerts": [f"error: {str(e)}"],
+            "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
+        }
+
+    alerts = _validate_iwca(result)
+    learn = _learn_from_history(payload, result, alerts)
+    conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not result else 0.0)
+    conf = max(0.1, min(0.95, conf))
 
     return {
         "result": result,
-        "provenance": provenance,
-        "confidence": confidence,
+        "provenance": {"sources": sources},
+        "confidence": conf,
         "alerts": alerts,
-        "meta": {"strategy": "v0"},
+        "meta": {
+            "strategy": "l4-v0",
+            "org_id": org_id,
+            "query": query,
+            "notes": learn.get("notes", []),
+        },
     }

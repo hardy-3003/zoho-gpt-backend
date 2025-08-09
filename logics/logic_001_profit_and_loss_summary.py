@@ -1,5 +1,28 @@
-# L4-ready logic: Profit & Loss Summary
-# Ground rules: history-aware, self-learning hooks, deterministic output, no secrets.
+from typing import Dict, Any, List
+
+# Prefer using helpers if available; define safe fallbacks to keep imports clean
+try:  # noqa: F401 - imported for side-effect/use when present
+    from helpers.zoho_client import get_json  # type: ignore
+except Exception:  # pragma: no cover
+
+    def get_json(_url: str, headers: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
+        return {}
+
+
+try:
+    from helpers.history_store import append_event  # type: ignore
+except Exception:  # pragma: no cover
+    try:
+        from helpers.history_store import write_event as _write_event  # type: ignore
+
+        def append_event(logic_id: str, data: Dict[str, Any]) -> None:  # type: ignore
+            _write_event(f"logic_{logic_id}", data)
+
+    except Exception:  # pragma: no cover
+
+        def append_event(_logic_id: str, _data: Dict[str, Any]) -> None:  # type: ignore
+            return None
+
 
 LOGIC_META = {
     "id": "L-001",
@@ -7,75 +30,96 @@ LOGIC_META = {
     "tags": ["pnl", "profit", "loss", "summary", "income", "expense", "finance"],
 }
 
-def _learn_from_history(_payload, _result):
-    """
-    L4 hook (placeholder):
-    - capture patterns/anomalies
-    - adjust confidence
-    - persist lightweight history for reverse-learning
-    """
-    # No-op for now; wire to helpers/history_store later.
-    return {"notes": []}
 
-def _validate_accounting(_result):
-    """
-    L4 smart validation (placeholder):
-    - check unbalanced totals, weird negatives, missing categories, date gaps
-    """
-    alerts = []
+def _validate_pnl_summary(result: Dict[str, Any]) -> List[str]:
+    alerts: List[str] = []
     try:
-        inc = float(_result.get("income_total", 0) or 0)
-        exp = float(_result.get("expense_total", 0) or 0)
-        prof = float(_result.get("profit", 0) or 0)
-        if round(inc - exp - prof, 2) != 0:
-            alerts.append("P&L does not balance: income - expenses != profit")
+        totals = result.get("totals", {})
+        income_total = float(totals.get("income_total", 0) or 0)
+        expense_total = float(totals.get("expense_total", 0) or 0)
+        profit = float(totals.get("profit", 0) or 0)
+        if abs(income_total - expense_total - profit) > 0.01:
+            alerts.append("unbalanced: income - expense != profit")
+        breakdown = result.get("breakdown", {}) or {}
+        income_lines = breakdown.get("Income", []) or []
+        expense_lines = breakdown.get("Expenses", []) or []
+        if not income_lines and not expense_lines:
+            alerts.append("empty breakdown")
+        for line in income_lines + expense_lines:
+            amt = float(line.get("amount", 0) or 0)
+            if amt < 0:
+                alerts.append("negative amount detected")
+                break
     except Exception:
-        alerts.append("Validation skipped due to non-numeric values")
+        alerts.append("validation error")
     return alerts
 
-def handle(payload: dict) -> dict:
-    """
-    Expected payload:
-      org_id: str
-      start_date: YYYY-MM-DD
-      end_date:   YYYY-MM-DD
-      headers:    dict  (Authorization: Zoho-oauthtoken ...)
-      api_domain: str   (e.g., https://www.zohoapis.in)
-      query:      str
-    """
-    org_id     = payload.get("org_id")
-    start_date = payload.get("start_date")
-    end_date   = payload.get("end_date")
-    headers    = payload.get("headers", {})
-    api_domain = payload.get("api_domain", "")
-    query      = payload.get("query", "")
 
-    # TODO(v1): call Zoho APIs for a real P&L summary using api_domain + headers.
-    result = {
-        "period": {"start_date": start_date, "end_date": end_date},
-        "totals": {
-            "income_total": 0.0,
-            "expense_total": 0.0,
-            "profit": 0.0,
-        },
-        "breakdown": {
-            # "Income": [{"account":"Sales", "amount":...}, ...],
-            # "Expenses": [{"account":"Salaries", "amount":...}, ...],
-        },
-    }
+def _learn_from_history(
+    payload: Dict[str, Any], result: Dict[str, Any]
+) -> Dict[str, Any]:
+    try:
+        append_event(
+            LOGIC_META["id"],
+            {
+                "org_id": payload.get("org_id"),
+                "period": {
+                    "start": payload.get("start_date"),
+                    "end": payload.get("end_date"),
+                },
+                "signals": ["l4-v0-run", "schema:stable"],
+            },
+        )
+    except Exception:
+        pass
+    return {"notes": []}
 
-    # L4 validations + learning hooks (lightweight placeholders)
-    alerts = _validate_accounting({
-        "income_total": result["totals"]["income_total"],
-        "expense_total": result["totals"]["expense_total"],
-        "profit": result["totals"]["profit"],
-    })
+
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    org_id: Any = payload.get("org_id")
+    start_date: Any = payload.get("start_date")
+    end_date: Any = payload.get("end_date")
+    headers: Dict[str, Any] = payload.get("headers", {})
+    api_domain: str = payload.get("api_domain", "")
+    query: str = payload.get("query", "")
+
+    sources: List[str] = []
+    result: Dict[str, Any] = {}
+
+    try:
+        # Deterministic placeholder without external calls
+        # Document intended sources
+        sources.append("/books/v3/invoices?date_start=&date_end=")
+        sources.append("/books/v3/bills?date_start=&date_end=")
+
+        result = {
+            "period": {"start_date": start_date, "end_date": end_date},
+            "totals": {"income_total": 0.0, "expense_total": 0.0, "profit": 0.0},
+            "breakdown": {"Income": [], "Expenses": []},
+        }
+    except Exception as e:
+        return {
+            "result": {},
+            "provenance": {"sources": sources},
+            "confidence": 0.2,
+            "alerts": [f"error: {str(e)}"],
+            "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
+        }
+
+    alerts = _validate_pnl_summary(result)
     learn = _learn_from_history(payload, result)
+
+    conf = 0.6
+    if any(a.startswith("unbalanced") for a in alerts):
+        conf -= 0.15
+    if "empty breakdown" in alerts:
+        conf -= 0.10
+    conf = max(0.1, min(0.95, conf))
 
     return {
         "result": result,
-        "provenance": {"sources": []},
-        "confidence": 0.5,
+        "provenance": {"sources": sources},
+        "confidence": conf,
         "alerts": alerts,
         "meta": {
             "strategy": "l4-v0",

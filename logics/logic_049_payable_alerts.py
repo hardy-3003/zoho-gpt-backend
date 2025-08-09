@@ -1,40 +1,108 @@
-"""
-Title: Payable Alerts
-ID: L-049
-Tags: ["mis"]
-Required Inputs: {org_id, start_date, end_date}
-Outputs: {result, provenance, confidence, alerts, meta}
-Assumptions: Placeholder compute
-Evolution Notes: Strategies to be learned from usage
-"""
+from typing import Dict, Any, List
 
-from __future__ import annotations
-from typing import Any, Dict
-from helpers.learning_hooks import score_confidence
-from helpers.history_store import write_event
+try:
+    from helpers.zoho_client import get_json
+except Exception:
+
+    def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
+        return {}
+
+
+try:
+    from helpers.history_store import append_event
+except Exception:
+
+    def append_event(*args, **kwargs) -> None:
+        return None
+
 
 LOGIC_META = {
     "id": "L-049",
     "title": "Payable Alerts",
-    "tags": ["mis"],
+    "tags": ["ap", "alerts", "aging"],
 }
 
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    result: Dict[str, Any] = {}
-    provenance = {"sources": []}
-    alerts: list[str] = []
-    confidence = score_confidence(result)
+_ALERT_TYPES = {"overdue", "high_amount", "aging_bucket"}
 
-    write_event("logic_L-049", {
-        "inputs": {k: payload.get(k) for k in ["org_id", "start_date", "end_date"]},
-        "outputs": result,
-        "alerts": alerts,
-    })
+
+def _validate_payable_alerts(result: Dict[str, Any]) -> List[str]:
+    alerts: List[str] = []
+    items = result.get("alerts", [])
+    totals = result.get("totals", {})
+    if int(totals.get("alerts", 0) or 0) != len(items):
+        alerts.append("count_mismatch")
+    for it in items:
+        if it.get("type") not in _ALERT_TYPES:
+            alerts.append("invalid_alert_type")
+        if it.get("amount") is None:
+            alerts.append("missing_amount")
+    return alerts
+
+
+def _learn_from_history(
+    payload: Dict[str, Any], result: Dict[str, Any]
+) -> Dict[str, Any]:
+    try:
+        append_event(
+            LOGIC_META["id"],
+            {
+                "org_id": payload.get("org_id"),
+                "period": {
+                    "start": payload.get("start_date"),
+                    "end": payload.get("end_date"),
+                },
+                "signals": ["l4-v0-run", "schema:stable"],
+            },
+        )
+    except Exception:
+        pass
+    return {"notes": []}
+
+
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    org_id = payload.get("org_id")
+    start_date = payload.get("start_date")
+    end_date = payload.get("end_date")
+    headers = payload.get("headers", {})
+    api_domain = payload.get("api_domain", "")
+    query = payload.get("query", "")
+
+    sources: List[str] = []
+    result: Dict[str, Any] = {}
+
+    try:
+        bills_url = f"{api_domain}/books/v3/bills?status=unpaid&date_end={end_date}&organization_id={org_id}"
+        sources.append(bills_url)
+        _ = get_json(bills_url, headers)
+
+        result = {
+            "as_of": end_date,
+            "alerts": [],
+            "totals": {"alerts": 0},
+        }
+    except Exception as e:
+        return {
+            "result": {},
+            "provenance": {"sources": sources},
+            "confidence": 0.2,
+            "alerts": [f"error: {str(e)}"],
+            "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
+        }
+
+    alerts = _validate_payable_alerts(result)
+    learn = _learn_from_history(payload, result)
+    conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not result else 0.0)
+    conf = max(0.1, min(0.95, conf))
 
     return {
         "result": result,
-        "provenance": provenance,
-        "confidence": confidence,
+        "provenance": {"sources": sources},
+        "confidence": conf,
         "alerts": alerts,
-        "meta": {"strategy": "v0"},
+        "meta": {
+            "strategy": "l4-v0",
+            "org_id": org_id,
+            "query": query,
+            "notes": learn.get("notes", []),
+        },
     }

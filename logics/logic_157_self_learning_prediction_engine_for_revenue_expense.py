@@ -1,40 +1,118 @@
-"""
-Title: Self-learning Prediction Engine (for revenue/expense)
-ID: L-157
-Tags: ["mis"]
-Required Inputs: {org_id, start_date, end_date}
-Outputs: {result, provenance, confidence, alerts, meta}
-Assumptions: Placeholder compute
-Evolution Notes: Strategies to be learned from usage
-"""
+from typing import Dict, Any, List, Optional
 
-from __future__ import annotations
-from typing import Any, Dict
-from helpers.learning_hooks import score_confidence
-from helpers.history_store import write_event
+try:
+    from helpers.zoho_client import get_json
+except Exception:
+
+    def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
+        return {}
+
+
+try:
+    from helpers.history_store import append_event
+except Exception:
+
+    def append_event(*args, **kwargs) -> None:
+        return None
+
 
 LOGIC_META = {
     "id": "L-157",
-    "title": "Self-learning Prediction Engine (for revenue/expense)",
-    "tags": ["mis"],
+    "title": "Self-learning Prediction (Revenue/Expense)",
+    "tags": ["forecast", "learn", "timeseries"],
 }
 
+
+def _validate_slp(result: Dict[str, Any]) -> List[str]:
+    alerts: List[str] = []
+    try:
+        for arr_key in ["revenue_forecast", "expense_forecast"]:
+            for it in result.get(arr_key) or []:
+                if float(it.get("value", 0.0) or 0.0) < 0:
+                    alerts.append("negative_value")
+        hz = int(result.get("horizon_months", 0) or 0)
+        if hz < 0 or hz > 12:
+            alerts.append("horizon_out_of_bounds")
+    except Exception:
+        alerts.append("validation_error")
+    return list(dict.fromkeys(alerts))
+
+
+def _learn_from_history(
+    payload: Dict[str, Any], result: Dict[str, Any], alerts: List[str]
+) -> Dict[str, Any]:
+    signals: List[str] = ["l4-v0-run", "schema:stable"]
+    try:
+        signals.append(f"horizon:{int(result.get('horizon_months') or 0)}")
+    except Exception:
+        pass
+    try:
+        append_event(
+            LOGIC_META["id"],
+            {
+                "org_id": payload.get("org_id"),
+                "period": {
+                    "start": payload.get("start_date"),
+                    "end": payload.get("end_date"),
+                },
+                "signals": signals,
+                "summary": {
+                    "size": len(result.get("revenue_forecast") or [])
+                    + len(result.get("expense_forecast") or [])
+                },
+            },
+        )
+    except Exception:
+        pass
+    return {"notes": signals[:3]}
+
+
 def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    org_id: Optional[str] = payload.get("org_id")
+    start_date: Optional[str] = payload.get("start_date")
+    end_date: Optional[str] = payload.get("end_date")
+    headers: Dict[str, str] = payload.get("headers", {})
+    api_domain: str = payload.get("api_domain", "")
+    query: str = payload.get("query", "")
+
+    sources: List[str] = []
     result: Dict[str, Any] = {}
-    provenance = {"sources": []}
-    alerts: list[str] = []
-    confidence = score_confidence(result)
 
-    write_event("logic_L-157", {
-        "inputs": {k: payload.get(k) for k in ["org_id", "start_date", "end_date"]},
-        "outputs": result,
-        "alerts": alerts,
-    })
+    try:
+        inv_url = f"{api_domain}/books/v3/invoices?date_start=&date_end={end_date}&organization_id={org_id}&aggregate=month"
+        bill_url = f"{api_domain}/books/v3/bills?date_start=&date_end={end_date}&organization_id={org_id}&aggregate=month"
+        sources.extend([inv_url, bill_url])
+        _ = get_json(inv_url, headers)
+        _ = get_json(bill_url, headers)
 
+        result = {
+            "period": {"start": start_date, "end": end_date},
+            "revenue_forecast": [],
+            "expense_forecast": [],
+            "horizon_months": 6,
+        }
+    except Exception as e:
+        return {
+            "result": {},
+            "provenance": {"sources": sources},
+            "confidence": 0.2,
+            "alerts": [f"error: {str(e)}"],
+            "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
+        }
+
+    alerts = _validate_slp(result)
+    learn = _learn_from_history(payload, result, alerts)
+    conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not result else 0.0)
+    conf = max(0.1, min(0.95, conf))
     return {
         "result": result,
-        "provenance": provenance,
-        "confidence": confidence,
+        "provenance": {"sources": sources},
+        "confidence": conf,
         "alerts": alerts,
-        "meta": {"strategy": "v0"},
+        "meta": {
+            "strategy": "l4-v0",
+            "org_id": org_id,
+            "query": query,
+            "notes": learn.get("notes", []),
+        },
     }

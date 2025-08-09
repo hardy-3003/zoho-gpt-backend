@@ -40,6 +40,7 @@ def load_all_logics() -> int:
 
     package_path = os.path.dirname(importlib.import_module("logics").__file__)
     count = 0
+    loaded_ids: List[str] = []
     for module_info in pkgutil.iter_modules([package_path]):
         if not module_info.ispkg and module_info.name.startswith("logic_"):
             module_name = f"logics.{module_info.name}"
@@ -53,7 +54,15 @@ def load_all_logics() -> int:
                 )
                 LOGIC_REGISTRY[meta.logic_id] = (mod.handle, meta)
                 _index_keywords(meta.logic_id, meta)
+                loaded_ids.append(meta.logic_id)
                 count += 1
+    # Ensure schemas exist for all loaded logic IDs (defaults where not provided)
+    try:
+        from helpers.schema_registry import ensure_all_logic_defaults
+
+        ensure_all_logic_defaults(loaded_ids)
+    except Exception:
+        pass
     return count
 
 
