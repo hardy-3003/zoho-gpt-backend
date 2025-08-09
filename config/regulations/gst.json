@@ -1,0 +1,6 @@
+{
+  "versions": [
+    { "effective_from": "2024-01-01", "data": { "return_status_values": ["filed", "pending", "late"] } }
+  ]
+}
+
