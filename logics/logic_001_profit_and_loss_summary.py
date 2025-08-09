@@ -128,3 +128,31 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
             "notes": learn.get("notes", []),
         },
     }
+# ---- L4 wrapper glue (safe, additive) ----------------------------------------
+try:
+    from helpers.logic_contract import l4_compliant
+except Exception:  # fallback if import fails
+    def l4_compliant(*_a, **_k):
+        def _wrap(f): return f
+        return _wrap
+
+# Resolve the underlying implementation once, in this order
+_handle_impl = None
+for _name in ("handle_impl", "handle_core", "handle"):
+    if _name in globals() and callable(globals()[_name]):
+        _handle_impl = globals()[_name]
+        break
+
+@l4_compliant(validate=True, logic_id="L-001")
+def handle(payload):
+    if _handle_impl is None:
+        # Standard error envelope if the file had no implementation
+        return {
+            "result": None,
+            "provenance": {"source": "internal", "path": None},
+            "confidence": 0.2,
+            "alerts": [{"level": "error", "message": "No underlying handle implementation found"}],
+            "meta": {"logic": "L-001"}
+        }
+    return _handle_impl(payload)
+# ------------------------------------------------------------------------------
