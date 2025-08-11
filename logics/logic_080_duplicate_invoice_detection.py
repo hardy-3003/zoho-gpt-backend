@@ -1,3 +1,12 @@
+"""
+Title: Duplicate Invoice Detection
+ID: L-080
+Tags: []
+Required Inputs: schema://duplicate_invoice_detection.input.v1
+Outputs: schema://duplicate_invoice_detection.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

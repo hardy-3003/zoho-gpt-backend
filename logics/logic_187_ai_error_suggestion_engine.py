@@ -1,3 +1,12 @@
+"""
+Title: Ai Error Suggestion Engine
+ID: L-187
+Tags: []
+Required Inputs: schema://ai_error_suggestion_engine.input.v1
+Outputs: schema://ai_error_suggestion_engine.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

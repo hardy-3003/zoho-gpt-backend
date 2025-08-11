@@ -1,3 +1,12 @@
+"""
+Title: Journal Trace Visualizer Graph View Of Entry Relationships
+ID: L-179
+Tags: []
+Required Inputs: schema://journal_trace_visualizer_graph_view_of_entry_relationships.input.v1
+Outputs: schema://journal_trace_visualizer_graph_view_of_entry_relationships.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

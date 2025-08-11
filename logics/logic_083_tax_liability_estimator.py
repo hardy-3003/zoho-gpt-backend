@@ -1,3 +1,12 @@
+"""
+Title: Tax Liability Estimator
+ID: L-083
+Tags: []
+Required Inputs: schema://tax_liability_estimator.input.v1
+Outputs: schema://tax_liability_estimator.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

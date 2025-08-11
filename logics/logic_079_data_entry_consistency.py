@@ -1,3 +1,12 @@
+"""
+Title: Data Entry Consistency
+ID: L-079
+Tags: []
+Required Inputs: schema://data_entry_consistency.input.v1
+Outputs: schema://data_entry_consistency.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Employee Reimbursement Check
+ID: L-108
+Tags: []
+Required Inputs: schema://employee_reimbursement_check.input.v1
+Outputs: schema://employee_reimbursement_check.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

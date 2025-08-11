@@ -1,3 +1,12 @@
+"""
+Title: Advanced Filing Calendar Sync Gst Roc Tds
+ID: L-163
+Tags: []
+Required Inputs: schema://advanced_filing_calendar_sync_gst_roc_tds.input.v1
+Outputs: schema://advanced_filing_calendar_sync_gst_roc_tds.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Round Off Abuse Detector
+ID: L-122
+Tags: []
+Required Inputs: schema://round_off_abuse_detector.input.v1
+Outputs: schema://round_off_abuse_detector.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

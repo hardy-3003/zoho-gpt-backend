@@ -1,3 +1,12 @@
+"""
+Title: Investment Vs Working Capital Allocator
+ID: L-167
+Tags: []
+Required Inputs: schema://investment_vs_working_capital_allocator.input.v1
+Outputs: schema://investment_vs_working_capital_allocator.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

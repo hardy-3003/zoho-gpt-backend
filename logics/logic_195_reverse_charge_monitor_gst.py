@@ -1,3 +1,12 @@
+"""
+Title: Reverse Charge Monitor Gst
+ID: L-195
+Tags: []
+Required Inputs: schema://reverse_charge_monitor_gst.input.v1
+Outputs: schema://reverse_charge_monitor_gst.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

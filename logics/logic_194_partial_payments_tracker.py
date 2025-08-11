@@ -1,3 +1,12 @@
+"""
+Title: Partial Payments Tracker
+ID: L-194
+Tags: []
+Required Inputs: schema://partial_payments_tracker.input.v1
+Outputs: schema://partial_payments_tracker.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

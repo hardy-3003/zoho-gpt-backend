@@ -1,3 +1,12 @@
+"""
+Title: Batch Yield Analysis
+ID: L-136
+Tags: []
+Required Inputs: schema://batch_yield_analysis.input.v1
+Outputs: schema://batch_yield_analysis.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

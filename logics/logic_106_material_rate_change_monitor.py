@@ -1,3 +1,12 @@
+"""
+Title: Material Rate Change Monitor
+ID: L-106
+Tags: []
+Required Inputs: schema://material_rate_change_monitor.input.v1
+Outputs: schema://material_rate_change_monitor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

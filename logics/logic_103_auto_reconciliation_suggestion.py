@@ -1,3 +1,12 @@
+"""
+Title: Auto Reconciliation Suggestion
+ID: L-103
+Tags: []
+Required Inputs: schema://auto_reconciliation_suggestion.input.v1
+Outputs: schema://auto_reconciliation_suggestion.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

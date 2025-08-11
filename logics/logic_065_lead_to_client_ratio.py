@@ -1,3 +1,12 @@
+"""
+Title: Lead To Client Ratio
+ID: L-065
+Tags: []
+Required Inputs: schema://lead_to_client_ratio.input.v1
+Outputs: schema://lead_to_client_ratio.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Bank Feed Intelligence Layer
+ID: L-165
+Tags: []
+Required Inputs: schema://bank_feed_intelligence_layer.input.v1
+Outputs: schema://bank_feed_intelligence_layer.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

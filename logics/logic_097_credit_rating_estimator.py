@@ -1,3 +1,12 @@
+"""
+Title: Credit Rating Estimator
+ID: L-097
+Tags: []
+Required Inputs: schema://credit_rating_estimator.input.v1
+Outputs: schema://credit_rating_estimator.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

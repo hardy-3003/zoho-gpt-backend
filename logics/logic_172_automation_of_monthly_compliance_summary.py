@@ -1,3 +1,12 @@
+"""
+Title: Automation Of Monthly Compliance Summary
+ID: L-172
+Tags: []
+Required Inputs: schema://automation_of_monthly_compliance_summary.input.v1
+Outputs: schema://automation_of_monthly_compliance_summary.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

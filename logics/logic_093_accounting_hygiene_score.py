@@ -1,3 +1,12 @@
+"""
+Title: Accounting Hygiene Score
+ID: L-093
+Tags: []
+Required Inputs: schema://accounting_hygiene_score.input.v1
+Outputs: schema://accounting_hygiene_score.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

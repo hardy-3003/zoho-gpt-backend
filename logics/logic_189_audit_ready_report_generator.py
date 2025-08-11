@@ -1,3 +1,12 @@
+"""
+Title: Audit Ready Report Generator
+ID: L-189
+Tags: []
+Required Inputs: schema://audit_ready_report_generator.input.v1
+Outputs: schema://audit_ready_report_generator.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

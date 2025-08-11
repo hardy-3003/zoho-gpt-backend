@@ -1,3 +1,12 @@
+"""
+Title: Production Downtime Analysis
+ID: L-133
+Tags: []
+Required Inputs: schema://production_downtime_analysis.input.v1
+Outputs: schema://production_downtime_analysis.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

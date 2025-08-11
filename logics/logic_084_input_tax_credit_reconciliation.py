@@ -1,3 +1,12 @@
+"""
+Title: Input Tax Credit Reconciliation
+ID: L-084
+Tags: []
+Required Inputs: schema://input_tax_credit_reconciliation.input.v1
+Outputs: schema://input_tax_credit_reconciliation.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

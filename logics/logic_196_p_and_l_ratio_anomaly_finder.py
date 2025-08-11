@@ -1,3 +1,12 @@
+"""
+Title: P And L Ratio Anomaly Finder
+ID: L-196
+Tags: []
+Required Inputs: schema://p_and_l_ratio_anomaly_finder.input.v1
+Outputs: schema://p_and_l_ratio_anomaly_finder.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

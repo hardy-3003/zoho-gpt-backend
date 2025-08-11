@@ -1,3 +1,12 @@
+"""
+Title: Invoice Bounce Predictor
+ID: L-115
+Tags: []
+Required Inputs: schema://invoice_bounce_predictor.input.v1
+Outputs: schema://invoice_bounce_predictor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

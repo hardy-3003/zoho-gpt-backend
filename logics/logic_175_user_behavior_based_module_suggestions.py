@@ -1,3 +1,12 @@
+"""
+Title: User Behavior Based Module Suggestions
+ID: L-175
+Tags: []
+Required Inputs: schema://user_behavior_based_module_suggestions.input.v1
+Outputs: schema://user_behavior_based_module_suggestions.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

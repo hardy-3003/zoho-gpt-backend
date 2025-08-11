@@ -1,3 +1,12 @@
+"""
+Title: File Upload To Entry Mapper E G Invoice Pdf Je
+ID: L-161
+Tags: []
+Required Inputs: schema://file_upload_to_entry_mapper_e_g_invoice_pdf_je.input.v1
+Outputs: schema://file_upload_to_entry_mapper_e_g_invoice_pdf_je.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

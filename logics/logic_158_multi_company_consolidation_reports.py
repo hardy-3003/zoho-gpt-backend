@@ -1,3 +1,12 @@
+"""
+Title: Multi Company Consolidation Reports
+ID: L-158
+Tags: []
+Required Inputs: schema://multi_company_consolidation_reports.input.v1
+Outputs: schema://multi_company_consolidation_reports.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

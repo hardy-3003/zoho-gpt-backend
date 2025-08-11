@@ -1,3 +1,12 @@
+"""
+Title: Free Resource Usage Estimator Power Tools Etc
+ID: L-198
+Tags: []
+Required Inputs: schema://free_resource_usage_estimator_power_tools_etc.input.v1
+Outputs: schema://free_resource_usage_estimator_power_tools_etc.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

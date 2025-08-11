@@ -1,3 +1,12 @@
+"""
+Title: Invoice Duplication Prevention On Entry
+ID: L-119
+Tags: []
+Required Inputs: schema://invoice_duplication_prevention_on_entry.input.v1
+Outputs: schema://invoice_duplication_prevention_on_entry.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

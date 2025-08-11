@@ -1,3 +1,12 @@
+"""
+Title: Marketing Spend Efficiency
+ID: L-066
+Tags: []
+Required Inputs: schema://marketing_spend_efficiency.input.v1
+Outputs: schema://marketing_spend_efficiency.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

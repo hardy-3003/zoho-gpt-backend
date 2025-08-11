@@ -1,3 +1,12 @@
+"""
+Title: Expense Optimization Engine
+ID: L-096
+Tags: []
+Required Inputs: schema://expense_optimization_engine.input.v1
+Outputs: schema://expense_optimization_engine.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

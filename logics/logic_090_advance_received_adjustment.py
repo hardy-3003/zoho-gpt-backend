@@ -1,3 +1,12 @@
+"""
+Title: Advance Received Adjustment
+ID: L-090
+Tags: []
+Required Inputs: schema://advance_received_adjustment.input.v1
+Outputs: schema://advance_received_adjustment.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

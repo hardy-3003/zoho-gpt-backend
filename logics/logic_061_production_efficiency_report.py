@@ -1,3 +1,12 @@
+"""
+Title: Production Efficiency Report
+ID: L-061
+Tags: []
+Required Inputs: schema://production_efficiency_report.input.v1
+Outputs: schema://production_efficiency_report.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

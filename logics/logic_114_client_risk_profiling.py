@@ -1,3 +1,12 @@
+"""
+Title: Client Risk Profiling
+ID: L-114
+Tags: []
+Required Inputs: schema://client_risk_profiling.input.v1
+Outputs: schema://client_risk_profiling.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

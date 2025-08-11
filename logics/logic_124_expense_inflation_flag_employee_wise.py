@@ -1,3 +1,12 @@
+"""
+Title: Expense Inflation Flag Employee Wise
+ID: L-124
+Tags: []
+Required Inputs: schema://expense_inflation_flag_employee_wise.input.v1
+Outputs: schema://expense_inflation_flag_employee_wise.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

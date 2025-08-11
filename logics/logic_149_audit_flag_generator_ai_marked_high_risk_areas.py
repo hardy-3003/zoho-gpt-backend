@@ -1,3 +1,12 @@
+"""
+Title: Audit Flag Generator Ai Marked High Risk Areas
+ID: L-149
+Tags: []
+Required Inputs: schema://audit_flag_generator_ai_marked_high_risk_areas.input.v1
+Outputs: schema://audit_flag_generator_ai_marked_high_risk_areas.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

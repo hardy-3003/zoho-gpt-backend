@@ -1,3 +1,12 @@
+"""
+Title: Cross Company Loan Tracker
+ID: L-169
+Tags: []
+Required Inputs: schema://cross_company_loan_tracker.input.v1
+Outputs: schema://cross_company_loan_tracker.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

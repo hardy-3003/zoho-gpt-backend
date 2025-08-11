@@ -1,3 +1,12 @@
+"""
+Title: Mismatch In Payment Vs Invoice Timeline
+ID: L-197
+Tags: []
+Required Inputs: schema://mismatch_in_payment_vs_invoice_timeline.input.v1
+Outputs: schema://mismatch_in_payment_vs_invoice_timeline.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

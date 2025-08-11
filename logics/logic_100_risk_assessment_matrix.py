@@ -1,3 +1,12 @@
+"""
+Title: Risk Assessment Matrix
+ID: L-100
+Tags: []
+Required Inputs: schema://risk_assessment_matrix.input.v1
+Outputs: schema://risk_assessment_matrix.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

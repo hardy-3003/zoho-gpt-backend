@@ -1,3 +1,12 @@
+"""
+Title: Fleet Utilization Rate
+ID: L-143
+Tags: []
+Required Inputs: schema://fleet_utilization_rate.input.v1
+Outputs: schema://fleet_utilization_rate.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

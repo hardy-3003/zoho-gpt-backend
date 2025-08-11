@@ -1,3 +1,12 @@
+"""
+Title: Vendor Contract Expiry Alert
+ID: L-184
+Tags: []
+Required Inputs: schema://vendor_contract_expiry_alert.input.v1
+Outputs: schema://vendor_contract_expiry_alert.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

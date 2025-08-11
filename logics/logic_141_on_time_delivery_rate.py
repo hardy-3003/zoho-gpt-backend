@@ -1,3 +1,12 @@
+"""
+Title: On Time Delivery Rate
+ID: L-141
+Tags: []
+Required Inputs: schema://on_time_delivery_rate.input.v1
+Outputs: schema://on_time_delivery_rate.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

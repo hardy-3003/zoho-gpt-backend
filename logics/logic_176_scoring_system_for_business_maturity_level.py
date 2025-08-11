@@ -1,3 +1,12 @@
+"""
+Title: Scoring System For Business Maturity Level
+ID: L-176
+Tags: []
+Required Inputs: schema://scoring_system_for_business_maturity_level.input.v1
+Outputs: schema://scoring_system_for_business_maturity_level.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

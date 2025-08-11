@@ -1,3 +1,12 @@
+"""
+Title: Employee Productivity Analysis
+ID: L-063
+Tags: []
+Required Inputs: schema://employee_productivity_analysis.input.v1
+Outputs: schema://employee_productivity_analysis.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

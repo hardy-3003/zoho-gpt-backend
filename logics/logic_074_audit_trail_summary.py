@@ -1,3 +1,12 @@
+"""
+Title: Audit Trail Summary
+ID: L-074
+Tags: []
+Required Inputs: schema://audit_trail_summary.input.v1
+Outputs: schema://audit_trail_summary.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

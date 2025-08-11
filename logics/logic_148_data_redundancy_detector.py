@@ -1,3 +1,12 @@
+"""
+Title: Data Redundancy Detector
+ID: L-148
+Tags: []
+Required Inputs: schema://data_redundancy_detector.input.v1
+Outputs: schema://data_redundancy_detector.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

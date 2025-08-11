@@ -1,3 +1,12 @@
+"""
+Title: Business Valuation Estimator
+ID: L-098
+Tags: []
+Required Inputs: schema://business_valuation_estimator.input.v1
+Outputs: schema://business_valuation_estimator.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

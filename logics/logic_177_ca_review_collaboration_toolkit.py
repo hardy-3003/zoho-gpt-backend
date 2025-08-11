@@ -1,3 +1,12 @@
+"""
+Title: Ca Review Collaboration Toolkit
+ID: L-177
+Tags: []
+Required Inputs: schema://ca_review_collaboration_toolkit.input.v1
+Outputs: schema://ca_review_collaboration_toolkit.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

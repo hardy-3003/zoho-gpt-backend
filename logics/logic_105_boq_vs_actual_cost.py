@@ -1,3 +1,12 @@
+"""
+Title: Boq Vs Actual Cost
+ID: L-105
+Tags: []
+Required Inputs: schema://boq_vs_actual_cost.input.v1
+Outputs: schema://boq_vs_actual_cost.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

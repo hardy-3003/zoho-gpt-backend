@@ -1,3 +1,12 @@
+"""
+Title: Inter Company Transactions
+ID: L-070
+Tags: []
+Required Inputs: schema://inter_company_transactions.input.v1
+Outputs: schema://inter_company_transactions.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

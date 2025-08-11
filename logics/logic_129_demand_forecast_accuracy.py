@@ -1,3 +1,12 @@
+"""
+Title: Demand Forecast Accuracy
+ID: L-129
+Tags: []
+Required Inputs: schema://demand_forecast_accuracy.input.v1
+Outputs: schema://demand_forecast_accuracy.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

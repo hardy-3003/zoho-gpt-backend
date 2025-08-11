@@ -1,3 +1,12 @@
+"""
+Title: Internal Audit Checklist
+ID: L-072
+Tags: []
+Required Inputs: schema://internal_audit_checklist.input.v1
+Outputs: schema://internal_audit_checklist.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

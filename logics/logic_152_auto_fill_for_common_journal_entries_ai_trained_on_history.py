@@ -1,3 +1,12 @@
+"""
+Title: Auto Fill For Common Journal Entries Ai Trained On History
+ID: L-152
+Tags: []
+Required Inputs: schema://auto_fill_for_common_journal_entries_ai_trained_on_history.input.v1
+Outputs: schema://auto_fill_for_common_journal_entries_ai_trained_on_history.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Salary Vs Market Benchmark
+ID: L-082
+Tags: []
+Required Inputs: schema://salary_vs_market_benchmark.input.v1
+Outputs: schema://salary_vs_market_benchmark.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

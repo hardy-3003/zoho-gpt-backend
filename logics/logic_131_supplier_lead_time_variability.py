@@ -1,3 +1,12 @@
+"""
+Title: Supplier Lead Time Variability
+ID: L-131
+Tags: []
+Required Inputs: schema://supplier_lead_time_variability.input.v1
+Outputs: schema://supplier_lead_time_variability.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

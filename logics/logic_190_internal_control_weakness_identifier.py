@@ -1,3 +1,12 @@
+"""
+Title: Internal Control Weakness Identifier
+ID: L-190
+Tags: []
+Required Inputs: schema://internal_control_weakness_identifier.input.v1
+Outputs: schema://internal_control_weakness_identifier.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

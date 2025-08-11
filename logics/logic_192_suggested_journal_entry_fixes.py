@@ -1,3 +1,12 @@
+"""
+Title: Suggested Journal Entry Fixes
+ID: L-192
+Tags: []
+Required Inputs: schema://suggested_journal_entry_fixes.input.v1
+Outputs: schema://suggested_journal_entry_fixes.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

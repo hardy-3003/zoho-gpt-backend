@@ -1,3 +1,12 @@
+"""
+Title: Late Vendor Payment Penalty Alert
+ID: L-111
+Tags: []
+Required Inputs: schema://late_vendor_payment_penalty_alert.input.v1
+Outputs: schema://late_vendor_payment_penalty_alert.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

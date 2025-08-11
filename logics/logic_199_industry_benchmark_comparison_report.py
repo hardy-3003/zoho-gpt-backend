@@ -1,3 +1,12 @@
+"""
+Title: Industry Benchmark Comparison Report
+ID: L-199
+Tags: []
+Required Inputs: schema://industry_benchmark_comparison_report.input.v1
+Outputs: schema://industry_benchmark_comparison_report.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

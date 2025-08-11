@@ -1,3 +1,12 @@
+"""
+Title: Unbilled Revenue Tracker
+ID: L-089
+Tags: []
+Required Inputs: schema://unbilled_revenue_tracker.input.v1
+Outputs: schema://unbilled_revenue_tracker.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

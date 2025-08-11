@@ -1,3 +1,12 @@
+"""
+Title: Inter Branch Transfer Log
+ID: L-107
+Tags: []
+Required Inputs: schema://inter_branch_transfer_log.input.v1
+Outputs: schema://inter_branch_transfer_log.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Sales Team Performance
+ID: L-062
+Tags: []
+Required Inputs: schema://sales_team_performance.input.v1
+Outputs: schema://sales_team_performance.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

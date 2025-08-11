@@ -1,3 +1,12 @@
+"""
+Title: Voice To Entry Convert Spoken Input To Journal
+ID: L-162
+Tags: []
+Required Inputs: schema://voice_to_entry_convert_spoken_input_to_journal.input.v1
+Outputs: schema://voice_to_entry_convert_spoken_input_to_journal.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

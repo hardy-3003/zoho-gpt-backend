@@ -1,3 +1,12 @@
+"""
+Title: Cash Reserve Advisor
+ID: L-101
+Tags: []
+Required Inputs: schema://cash_reserve_advisor.input.v1
+Outputs: schema://cash_reserve_advisor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

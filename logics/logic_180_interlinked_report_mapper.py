@@ -1,3 +1,12 @@
+"""
+Title: Interlinked Report Mapper
+ID: L-180
+Tags: []
+Required Inputs: schema://interlinked_report_mapper.input.v1
+Outputs: schema://interlinked_report_mapper.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

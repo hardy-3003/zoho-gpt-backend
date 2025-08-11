@@ -1,3 +1,12 @@
+"""
+Title: Transportation Cost Analysis
+ID: L-142
+Tags: []
+Required Inputs: schema://transportation_cost_analysis.input.v1
+Outputs: schema://transportation_cost_analysis.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

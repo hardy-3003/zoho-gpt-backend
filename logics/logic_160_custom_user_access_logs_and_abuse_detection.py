@@ -1,3 +1,12 @@
+"""
+Title: Custom User Access Logs And Abuse Detection
+ID: L-160
+Tags: []
+Required Inputs: schema://custom_user_access_logs_and_abuse_detection.input.v1
+Outputs: schema://custom_user_access_logs_and_abuse_detection.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

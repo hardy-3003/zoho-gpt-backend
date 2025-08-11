@@ -1,3 +1,12 @@
+"""
+Title: Missed Payment Tracker
+ID: L-086
+Tags: []
+Required Inputs: schema://missed_payment_tracker.input.v1
+Outputs: schema://missed_payment_tracker.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

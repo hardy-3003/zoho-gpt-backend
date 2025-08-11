@@ -1,3 +1,12 @@
+"""
+Title: Machine Efficiency Tracker
+ID: L-135
+Tags: []
+Required Inputs: schema://machine_efficiency_tracker.input.v1
+Outputs: schema://machine_efficiency_tracker.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

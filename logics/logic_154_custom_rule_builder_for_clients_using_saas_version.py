@@ -1,3 +1,12 @@
+"""
+Title: Custom Rule Builder For Clients Using Saas Version
+ID: L-154
+Tags: []
+Required Inputs: schema://custom_rule_builder_for_clients_using_saas_version.input.v1
+Outputs: schema://custom_rule_builder_for_clients_using_saas_version.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

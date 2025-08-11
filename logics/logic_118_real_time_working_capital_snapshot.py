@@ -1,3 +1,12 @@
+"""
+Title: Real Time Working Capital Snapshot
+ID: L-118
+Tags: []
+Required Inputs: schema://real_time_working_capital_snapshot.input.v1
+Outputs: schema://real_time_working_capital_snapshot.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

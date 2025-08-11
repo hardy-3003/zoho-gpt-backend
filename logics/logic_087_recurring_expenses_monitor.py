@@ -1,3 +1,12 @@
+"""
+Title: Recurring Expenses Monitor
+ID: L-087
+Tags: []
+Required Inputs: schema://recurring_expenses_monitor.input.v1
+Outputs: schema://recurring_expenses_monitor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

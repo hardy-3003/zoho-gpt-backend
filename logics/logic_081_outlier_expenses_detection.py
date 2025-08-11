@@ -1,3 +1,12 @@
+"""
+Title: Outlier Expenses Detection
+ID: L-081
+Tags: []
+Required Inputs: schema://outlier_expenses_detection.input.v1
+Outputs: schema://outlier_expenses_detection.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

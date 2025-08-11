@@ -1,3 +1,12 @@
+"""
+Title: Contract Breach Detection
+ID: L-113
+Tags: []
+Required Inputs: schema://contract_breach_detection.input.v1
+Outputs: schema://contract_breach_detection.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

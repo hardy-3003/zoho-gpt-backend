@@ -1,3 +1,12 @@
+"""
+Title: Self Learning Prediction Engine For Revenue Expense
+ID: L-157
+Tags: []
+Required Inputs: schema://self_learning_prediction_engine_for_revenue_expense.input.v1
+Outputs: schema://self_learning_prediction_engine_for_revenue_expense.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

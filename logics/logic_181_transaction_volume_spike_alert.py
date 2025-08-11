@@ -1,3 +1,12 @@
+"""
+Title: Transaction Volume Spike Alert
+ID: L-181
+Tags: []
+Required Inputs: schema://transaction_volume_spike_alert.input.v1
+Outputs: schema://transaction_volume_spike_alert.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

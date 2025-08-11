@@ -1,3 +1,12 @@
+"""
+Title: Hsn Sac Mapping Auditor
+ID: L-186
+Tags: []
+Required Inputs: schema://hsn_sac_mapping_auditor.input.v1
+Outputs: schema://hsn_sac_mapping_auditor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

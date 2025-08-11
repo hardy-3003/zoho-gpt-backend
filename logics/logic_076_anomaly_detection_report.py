@@ -1,3 +1,12 @@
+"""
+Title: Anomaly Detection Report
+ID: L-076
+Tags: []
+Required Inputs: schema://anomaly_detection_report.input.v1
+Outputs: schema://anomaly_detection_report.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

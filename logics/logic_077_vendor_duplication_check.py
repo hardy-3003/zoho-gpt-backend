@@ -1,3 +1,12 @@
+"""
+Title: Vendor Duplication Check
+ID: L-077
+Tags: []
+Required Inputs: schema://vendor_duplication_check.input.v1
+Outputs: schema://vendor_duplication_check.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

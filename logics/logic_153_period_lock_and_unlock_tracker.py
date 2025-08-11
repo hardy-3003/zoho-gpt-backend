@@ -1,3 +1,12 @@
+"""
+Title: Period Lock And Unlock Tracker
+ID: L-153
+Tags: []
+Required Inputs: schema://period_lock_and_unlock_tracker.input.v1
+Outputs: schema://period_lock_and_unlock_tracker.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

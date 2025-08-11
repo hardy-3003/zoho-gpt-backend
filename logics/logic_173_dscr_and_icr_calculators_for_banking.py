@@ -1,3 +1,12 @@
+"""
+Title: Dscr And Icr Calculators For Banking
+ID: L-173
+Tags: []
+Required Inputs: schema://dscr_and_icr_calculators_for_banking.input.v1
+Outputs: schema://dscr_and_icr_calculators_for_banking.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Overdue Tds Deduction Cases
+ID: L-182
+Tags: []
+Required Inputs: schema://overdue_tds_deduction_cases.input.v1
+Outputs: schema://overdue_tds_deduction_cases.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

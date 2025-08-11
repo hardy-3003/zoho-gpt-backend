@@ -1,3 +1,12 @@
+"""
+Title: Suspense Account Monitor
+ID: L-092
+Tags: []
+Required Inputs: schema://suspense_account_monitor.input.v1
+Outputs: schema://suspense_account_monitor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Monthly Report Completeness Checker
+ID: L-191
+Tags: []
+Required Inputs: schema://monthly_report_completeness_checker.input.v1
+Outputs: schema://monthly_report_completeness_checker.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

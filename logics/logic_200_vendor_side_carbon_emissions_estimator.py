@@ -1,3 +1,12 @@
+"""
+Title: Vendor Side Carbon Emissions Estimator
+ID: L-200
+Tags: []
+Required Inputs: schema://vendor_side_carbon_emissions_estimator.input.v1
+Outputs: schema://vendor_side_carbon_emissions_estimator.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

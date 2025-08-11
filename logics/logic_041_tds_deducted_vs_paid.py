@@ -15,6 +15,7 @@ from helpers.schema_registry import validate_output_contract
 
 from typing import Dict, Any, List
 from typing import Any, Dict
+
 LOGIC_ID = "L-XXX"
 
 try:
@@ -122,12 +123,15 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
         },
     }
 
+
 def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
     # Call legacy compute (now handle_impl). It may already return contract-shaped output.
     core_out = handle_impl(payload)
 
     # If core_out already looks contract-compliant, validate and return as-is.
-    if isinstance(core_out, dict) and        all(k in core_out for k in ("result","provenance","confidence","alerts")):
+    if isinstance(core_out, dict) and all(
+        k in core_out for k in ("result", "provenance", "confidence", "alerts")
+    ):
         try:
             validate_output_contract(core_out)
         except Exception:
@@ -148,7 +152,11 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     # Minimal provenance (period-aware)
     prov = make_provenance(
-        result={"endpoint": "reports/auto", "ids": [], "filters": {"period": payload.get("period")}}
+        result={
+            "endpoint": "reports/auto",
+            "ids": [],
+            "filters": {"period": payload.get("period")},
+        }
     )
 
     # History + Deltas + Anomalies
@@ -170,7 +178,11 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     confidence = score_confidence(
         sample_size=sample_size,
-        anomalies=len(alerts_pack.get("anomalies", [])) if isinstance(alerts_pack, dict) else 0,
+        anomalies=(
+            len(alerts_pack.get("anomalies", []))
+            if isinstance(alerts_pack, dict)
+            else 0
+        ),
         validations_failed=validations_failed,
     )
 
@@ -184,7 +196,7 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
             alerts.append(alert)
         else:
             alerts.append({"msg": str(alert), "level": "info"})
-    
+
     output = {
         "result": result,
         "provenance": prov,
@@ -193,6 +205,7 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
     validate_output_contract(output)
     return output
+
 
 # Export wrapper as the official handler
 def handle(payload: Dict[str, Any]) -> Dict[str, Any]:

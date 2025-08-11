@@ -1,3 +1,12 @@
+"""
+Title: Profit Leakage Detector
+ID: L-088
+Tags: []
+Required Inputs: schema://profit_leakage_detector.input.v1
+Outputs: schema://profit_leakage_detector.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

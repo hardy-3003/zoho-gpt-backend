@@ -1,3 +1,12 @@
+"""
+Title: Warranty Claims Monitor
+ID: L-139
+Tags: []
+Required Inputs: schema://warranty_claims_monitor.input.v1
+Outputs: schema://warranty_claims_monitor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

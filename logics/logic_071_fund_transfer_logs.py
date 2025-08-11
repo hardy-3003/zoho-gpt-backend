@@ -1,3 +1,12 @@
+"""
+Title: Fund Transfer Logs
+ID: L-071
+Tags: []
+Required Inputs: schema://fund_transfer_logs.input.v1
+Outputs: schema://fund_transfer_logs.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Inventory Turnover Ratio
+ID: L-126
+Tags: []
+Required Inputs: schema://inventory_turnover_ratio.input.v1
+Outputs: schema://inventory_turnover_ratio.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

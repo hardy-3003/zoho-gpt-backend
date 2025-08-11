@@ -1,3 +1,12 @@
+"""
+Title: Departmental P And L
+ID: L-068
+Tags: []
+Required Inputs: schema://departmental_p_and_l.input.v1
+Outputs: schema://departmental_p_and_l.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

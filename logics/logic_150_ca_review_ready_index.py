@@ -1,3 +1,12 @@
+"""
+Title: Ca Review Ready Index
+ID: L-150
+Tags: []
+Required Inputs: schema://ca_review_ready_index.input.v1
+Outputs: schema://ca_review_ready_index.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Production Capacity Utilization
+ID: L-132
+Tags: []
+Required Inputs: schema://production_capacity_utilization.input.v1
+Outputs: schema://production_capacity_utilization.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

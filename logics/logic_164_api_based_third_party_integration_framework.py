@@ -1,3 +1,12 @@
+"""
+Title: Api Based Third Party Integration Framework
+ID: L-164
+Tags: []
+Required Inputs: schema://api_based_third_party_integration_framework.input.v1
+Outputs: schema://api_based_third_party_integration_framework.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

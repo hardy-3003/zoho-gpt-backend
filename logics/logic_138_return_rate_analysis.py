@@ -1,3 +1,12 @@
+"""
+Title: Return Rate Analysis
+ID: L-138
+Tags: []
+Required Inputs: schema://return_rate_analysis.input.v1
+Outputs: schema://return_rate_analysis.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Error Detection Engine
+ID: L-075
+Tags: []
+Required Inputs: schema://error_detection_engine.input.v1
+Outputs: schema://error_detection_engine.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

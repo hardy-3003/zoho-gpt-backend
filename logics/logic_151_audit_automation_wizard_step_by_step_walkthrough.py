@@ -1,3 +1,12 @@
+"""
+Title: Audit Automation Wizard Step By Step Walkthrough
+ID: L-151
+Tags: []
+Required Inputs: schema://audit_automation_wizard_step_by_step_walkthrough.input.v1
+Outputs: schema://audit_automation_wizard_step_by_step_walkthrough.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

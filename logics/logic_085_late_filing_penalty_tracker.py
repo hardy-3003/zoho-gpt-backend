@@ -1,3 +1,12 @@
+"""
+Title: Late Filing Penalty Tracker
+ID: L-085
+Tags: []
+Required Inputs: schema://late_filing_penalty_tracker.input.v1
+Outputs: schema://late_filing_penalty_tracker.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

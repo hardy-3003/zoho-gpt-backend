@@ -1,3 +1,12 @@
+"""
+Title: Strategic Suggestion Engine
+ID: L-102
+Tags: []
+Required Inputs: schema://strategic_suggestion_engine.input.v1
+Outputs: schema://strategic_suggestion_engine.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Stockout Frequency Alert
+ID: L-127
+Tags: []
+Required Inputs: schema://stockout_frequency_alert.input.v1
+Outputs: schema://stockout_frequency_alert.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

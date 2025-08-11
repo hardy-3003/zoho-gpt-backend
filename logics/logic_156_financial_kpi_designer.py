@@ -1,3 +1,12 @@
+"""
+Title: Financial Kpi Designer
+ID: L-156
+Tags: []
+Required Inputs: schema://financial_kpi_designer.input.v1
+Outputs: schema://financial_kpi_designer.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Route Optimization Alerts
+ID: L-145
+Tags: []
+Required Inputs: schema://route_optimization_alerts.input.v1
+Outputs: schema://route_optimization_alerts.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

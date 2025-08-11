@@ -1,3 +1,12 @@
+"""
+Title: Loan Covenant Breach Alert
+ID: L-123
+Tags: []
+Required Inputs: schema://loan_covenant_breach_alert.input.v1
+Outputs: schema://loan_covenant_breach_alert.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

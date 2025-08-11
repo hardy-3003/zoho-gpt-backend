@@ -1,3 +1,12 @@
+"""
+Title: Client Acquisition Cost
+ID: L-064
+Tags: []
+Required Inputs: schema://client_acquisition_cost.input.v1
+Outputs: schema://client_acquisition_cost.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

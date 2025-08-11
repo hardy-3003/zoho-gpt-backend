@@ -1,3 +1,12 @@
+"""
+Title: Margin Pressure Tracker Cost Vs Price
+ID: L-112
+Tags: []
+Required Inputs: schema://margin_pressure_tracker_cost_vs_price.input.v1
+Outputs: schema://margin_pressure_tracker_cost_vs_price.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

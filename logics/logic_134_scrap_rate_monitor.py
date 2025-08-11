@@ -1,3 +1,12 @@
+"""
+Title: Scrap Rate Monitor
+ID: L-134
+Tags: []
+Required Inputs: schema://scrap_rate_monitor.input.v1
+Outputs: schema://scrap_rate_monitor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

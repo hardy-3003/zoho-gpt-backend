@@ -1,3 +1,12 @@
+"""
+Title: Year End Closure Guide
+ID: L-166
+Tags: []
+Required Inputs: schema://year_end_closure_guide.input.v1
+Outputs: schema://year_end_closure_guide.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

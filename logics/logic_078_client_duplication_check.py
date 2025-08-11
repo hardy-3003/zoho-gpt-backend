@@ -1,3 +1,12 @@
+"""
+Title: Client Duplication Check
+ID: L-078
+Tags: []
+Required Inputs: schema://client_duplication_check.input.v1
+Outputs: schema://client_duplication_check.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

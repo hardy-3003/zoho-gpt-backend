@@ -1,3 +1,12 @@
+"""
+Title: Green Vendor Scorecard
+ID: L-147
+Tags: []
+Required Inputs: schema://green_vendor_scorecard.input.v1
+Outputs: schema://green_vendor_scorecard.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

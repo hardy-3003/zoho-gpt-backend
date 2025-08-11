@@ -1,3 +1,12 @@
+"""
+Title: Scenario Simulation Engine
+ID: L-095
+Tags: []
+Required Inputs: schema://scenario_simulation_engine.input.v1
+Outputs: schema://scenario_simulation_engine.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

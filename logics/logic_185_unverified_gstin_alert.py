@@ -1,3 +1,12 @@
+"""
+Title: Unverified Gstin Alert
+ID: L-185
+Tags: []
+Required Inputs: schema://unverified_gstin_alert.input.v1
+Outputs: schema://unverified_gstin_alert.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

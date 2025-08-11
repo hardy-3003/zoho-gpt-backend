@@ -1,3 +1,12 @@
+"""
+Title: Business Health Score
+ID: L-094
+Tags: []
+Required Inputs: schema://business_health_score.input.v1
+Outputs: schema://business_health_score.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

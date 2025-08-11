@@ -1,3 +1,12 @@
+"""
+Title: Ai Powered Explanation Tool Explain Balance Sheet In Plain Hindi
+ID: L-178
+Tags: []
+Required Inputs: schema://ai_powered_explanation_tool_explain_balance_sheet_in_plain_hindi.input.v1
+Outputs: schema://ai_powered_explanation_tool_explain_balance_sheet_in_plain_hindi.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

@@ -1,3 +1,12 @@
+"""
+Title: Inventory Shrinkage Alert
+ID: L-125
+Tags: []
+Required Inputs: schema://inventory_shrinkage_alert.input.v1
+Outputs: schema://inventory_shrinkage_alert.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

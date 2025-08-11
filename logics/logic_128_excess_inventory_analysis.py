@@ -1,3 +1,12 @@
+"""
+Title: Excess Inventory Analysis
+ID: L-128
+Tags: []
+Required Inputs: schema://excess_inventory_analysis.input.v1
+Outputs: schema://excess_inventory_analysis.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

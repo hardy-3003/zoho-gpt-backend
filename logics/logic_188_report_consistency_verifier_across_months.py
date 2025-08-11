@@ -1,3 +1,12 @@
+"""
+Title: Report Consistency Verifier Across Months
+ID: L-188
+Tags: []
+Required Inputs: schema://report_consistency_verifier_across_months.input.v1
+Outputs: schema://report_consistency_verifier_across_months.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

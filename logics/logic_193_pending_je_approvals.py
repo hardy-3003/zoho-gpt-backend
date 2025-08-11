@@ -1,3 +1,12 @@
+"""
+Title: Pending Je Approvals
+ID: L-193
+Tags: []
+Required Inputs: schema://pending_je_approvals.input.v1
+Outputs: schema://pending_je_approvals.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

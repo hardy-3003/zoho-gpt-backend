@@ -1,3 +1,12 @@
+"""
+Title: Legal Case Cost Monitor
+ID: L-171
+Tags: []
+Required Inputs: schema://legal_case_cost_monitor.input.v1
+Outputs: schema://legal_case_cost_monitor.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

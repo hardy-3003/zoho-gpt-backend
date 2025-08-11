@@ -1,3 +1,12 @@
+"""
+Title: Performance Linked Pay Analyzer
+ID: L-168
+Tags: []
+Required Inputs: schema://performance_linked_pay_analyzer.input.v1
+Outputs: schema://performance_linked_pay_analyzer.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

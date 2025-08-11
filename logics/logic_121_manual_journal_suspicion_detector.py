@@ -1,3 +1,12 @@
+"""
+Title: Manual Journal Suspicion Detector
+ID: L-121
+Tags: []
+Required Inputs: schema://manual_journal_suspicion_detector.input.v1
+Outputs: schema://manual_journal_suspicion_detector.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

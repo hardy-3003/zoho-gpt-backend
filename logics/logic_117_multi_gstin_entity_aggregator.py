@@ -1,3 +1,12 @@
+"""
+Title: Multi Gstin Entity Aggregator
+ID: L-117
+Tags: []
+Required Inputs: schema://multi_gstin_entity_aggregator.input.v1
+Outputs: schema://multi_gstin_entity_aggregator.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

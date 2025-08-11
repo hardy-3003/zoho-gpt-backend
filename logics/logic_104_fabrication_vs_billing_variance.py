@@ -1,3 +1,12 @@
+"""
+Title: Fabrication Vs Billing Variance
+ID: L-104
+Tags: []
+Required Inputs: schema://fabrication_vs_billing_variance.input.v1
+Outputs: schema://fabrication_vs_billing_variance.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:

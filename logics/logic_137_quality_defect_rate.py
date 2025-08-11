@@ -1,3 +1,12 @@
+"""
+Title: Quality Defect Rate
+ID: L-137
+Tags: []
+Required Inputs: schema://quality_defect_rate.input.v1
+Outputs: schema://quality_defect_rate.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List, Optional
 
 try:

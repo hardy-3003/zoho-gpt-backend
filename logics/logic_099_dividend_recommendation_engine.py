@@ -1,3 +1,12 @@
+"""
+Title: Dividend Recommendation Engine
+ID: L-099
+Tags: []
+Required Inputs: schema://dividend_recommendation_engine.input.v1
+Outputs: schema://dividend_recommendation_engine.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:
