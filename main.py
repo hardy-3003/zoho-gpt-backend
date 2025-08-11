@@ -144,19 +144,32 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
         body = await request.json()
         # Direct logic execution override: accept {logic_id, payload}
         if isinstance(body, dict) and body.get("logic_id"):
-            from core.logic_loader import LOGIC_REGISTRY as _LR, load_all_logics as _LL
+            logic_id = body.get("logic_id")
+            # Resolve by numeric ID prefix to avoid conflicts with title/name changes.
+            # Expected file: logics/logic_###_*.py -> module path "logics.logic_###_...".
+            # Accept either "L-014" or "014" etc.
+            num = logic_id.replace("L-", "").replace("l-", "")
+            num = num if len(num) == 3 else num.zfill(3)
+            # Search for a module that starts with logic_{num}_*
+            import pkgutil
+            import logics as _logics_pkg
 
-            _LL()
-            lid = body.get("logic_id")
-            entry = _LR.get(lid)
-            if not entry:
+            candidate = None
+            for _, modname, _ in pkgutil.iter_modules(_logics_pkg.__path__):
+                if modname.startswith(f"logic_{num}_"):
+                    candidate = f"logics.{modname}"
+                    break
+            if not candidate:
                 return JSONResponse(
-                    status_code=404, content={"error": f"logic '{lid}' not found"}
+                    status_code=404,
+                    content={"error": f"No logic module found for ID L-{num}"},
                 )
-            handler, _meta = entry
+            import importlib
+
+            mod = importlib.import_module(candidate)
             payload = body.get("payload") or {}
             try:
-                out = handler(payload)
+                out = mod.handle(payload)
                 # Return contract directly for smoke tests
                 return out
             except Exception as e:

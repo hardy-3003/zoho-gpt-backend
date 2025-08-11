@@ -15,6 +15,7 @@
 - 2025-08-11: Phase 1 foundation
   - Observability v1: added helpers/obs.py (runtime metrics + error logs); instrumented L-001, L-006, and RL generator; tests and CI artifact upload.
   - Orchestrator v1: DAG executor with per-node retries + graceful degradation; /mcp/stream for progress; unit test + CI smoke.
+  - Naming/ID enforcement: added tests to enforce `logic_###_snake_case.py` & `ID: L-###` docstring; safe resolver in /mcp/fetch (numeric ID), and dry-run renamer tool.
   - Wave 4: Applied L4 wrapper to Logic_031–Logic_040 (ops/inventory KPIs). Added parametric contract tests; seeded minimal domain provenance for inventory/ops logics.
   - Reverse-Learning (minimal E2E): added pdf_extractor shim, learned-format registry, generic_report_orchestrator learn+generate, main.py endpoints /rl/learn and /rl/generate, and integration test.
   - RL verification: reconciliation check + auto-enable flag on successful totals; alerts include reconciliation findings.
