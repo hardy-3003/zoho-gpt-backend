@@ -7,7 +7,14 @@ from core.operate_base import OperateInput
 from core.registry import route
 
 from core.registry import _REGISTRY  # add near other imports at the top if not present
+from typing import Any, Dict
+from orchestrators.generic_report_orchestrator import (
+    learn_from_pdf,
+    generate_from_learned,
+)
+import json, os
 from core.logic_loader import load_all_logics, plan_from_query
+from orchestrators.mis_orchestrator import NodeSpec, run_dag
 
 # Import modules for side-effects so they self-register in the registry
 # (do not remove even if they look unused)
@@ -134,6 +141,40 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
         return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
     try:
+        body = await request.json()
+        # Direct logic execution override: accept {logic_id, payload}
+        if isinstance(body, dict) and body.get("logic_id"):
+            logic_id = body.get("logic_id")
+            # Resolve by numeric ID prefix to avoid conflicts with title/name changes.
+            # Expected file: logics/logic_###_*.py -> module path "logics.logic_###_...".
+            # Accept either "L-014" or "014" etc.
+            num = logic_id.replace("L-", "").replace("l-", "")
+            num = num if len(num) == 3 else num.zfill(3)
+            # Search for a module that starts with logic_{num}_*
+            import pkgutil
+            import logics as _logics_pkg
+
+            candidate = None
+            for _, modname, _ in pkgutil.iter_modules(_logics_pkg.__path__):
+                if modname.startswith(f"logic_{num}_"):
+                    candidate = f"logics.{modname}"
+                    break
+            if not candidate:
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": f"No logic module found for ID L-{num}"},
+                )
+            import importlib
+
+            mod = importlib.import_module(candidate)
+            payload = body.get("payload") or {}
+            try:
+                out = mod.handle(payload)
+                # Return contract directly for smoke tests
+                return out
+            except Exception as e:
+                return JSONResponse(status_code=500, content={"error": str(e)})
+
         query = last_query.get("text", "").lower()
         if not query:
             return {"error": "Missing query"}
@@ -265,15 +306,49 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
         )
 
 
-# Optional: simple SSE stream for progress (placeholder)
 @app.post("/mcp/stream")
 async def mcp_stream(request: Request, authorization: str = Header(None)):
     if authorization != f"Bearer {MCP_SECRET}":
         return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
-    async def event_generator():
-        yield 'data: {"stage": "planning"}\n\n'
-        yield 'data: {"stage": "executing"}\n\n'
-        yield 'data: {"stage": "done"}\n\n'
+    try:
+        body = await request.json()
+        nodes = [NodeSpec(**n) for n in body.get("nodes", [])]
+        edges = [tuple(e) for e in body.get("edges", [])]
+        pl = body.get("payload", {})
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+        async def event_generator():
+            queue: list[dict[str, Any]] = []
+
+            def cb(evt: dict[str, Any]):
+                queue.append(evt)
+
+            results = run_dag(nodes, edges, pl, progress_cb=cb)
+            for evt in queue:
+                yield (json.dumps(evt) + "\n")
+            yield (json.dumps({"stage": "complete"}) + "\n")
+            yield (json.dumps({"results": list(results.keys())}) + "\n")
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# === Reverse-Learning minimal endpoints ===
+@app.post("/rl/learn")
+async def rl_learn(payload: Dict[str, Any]):
+    """
+    Learn a PDF format and persist mapping to /docs/learned_formats/*.json
+    """
+    return learn_from_pdf(payload["pdf_path"], payload.get("name", "mis_fixture_v1"))
+
+
+@app.post("/rl/generate")
+async def rl_generate(payload: Dict[str, Any]):
+    """
+    Use a learned mapping to produce a contract-compliant output.
+    payload: {"learned_path":"docs/learned_formats/mis_fixture_v1.json","source_fields":{...}, "period":"2025-06"}
+    """
+    with open(payload["learned_path"], "r", encoding="utf-8") as f:
+        mapping = json.load(f).get("mapping", {})
+    return generate_from_learned(payload, mapping)

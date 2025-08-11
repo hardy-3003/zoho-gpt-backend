@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "strategies": [],
+  "notes": [],
+  "variants": {
+    "k": {
+      "weight": 1.2
+    }
+  }
+}

@@ -1,4 +1,28 @@
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
+
+"""
+Title: Profit And Loss Summary
+ID: L-001
+Tags: []
+Required Inputs: schema://profit_and_loss_summary.input.v1
+Outputs: schema://profit_and_loss_summary.output.v1
+Assumptions:
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
+
+from helpers.rules_engine import validate_accounting
+from helpers.schema_registry import validate_output_contract
+
 from typing import Dict, Any, List
+from typing import Any, Dict
+
+LOGIC_ID = "L-XXX"
 
 # Prefer using helpers if available; define safe fallbacks to keep imports clean
 try:  # noqa: F401 - imported for side-effect/use when present
@@ -22,6 +46,17 @@ except Exception:  # pragma: no cover
 
         def append_event(_logic_id: str, _data: Dict[str, Any]) -> None:  # type: ignore
             return None
+
+
+try:
+    from helpers.obs import with_metrics  # type: ignore
+except Exception:  # pragma: no cover
+
+    def with_metrics(name: str):  # type: ignore
+        def deco(fn):
+            return fn
+
+        return deco
 
 
 LOGIC_META = {
@@ -75,7 +110,8 @@ def _learn_from_history(
     return {"notes": []}
 
 
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+@with_metrics("logic.L-001.handle")
+def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
     org_id: Any = payload.get("org_id")
     start_date: Any = payload.get("start_date")
     end_date: Any = payload.get("end_date")
@@ -128,13 +164,19 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
             "notes": learn.get("notes", []),
         },
     }
+
+
 # ---- L4 wrapper glue (safe, additive) ----------------------------------------
 try:
     from helpers.logic_contract import l4_compliant
 except Exception:  # fallback if import fails
+
     def l4_compliant(*_a, **_k):
-        def _wrap(f): return f
+        def _wrap(f):
+            return f
+
         return _wrap
+
 
 # Resolve the underlying implementation once, in this order
 _handle_impl = None
@@ -143,16 +185,186 @@ for _name in ("handle_impl", "handle_core", "handle"):
         _handle_impl = globals()[_name]
         break
 
+
 @l4_compliant(validate=True, logic_id="L-001")
-def handle(payload):
+def handle_impl(payload):
     if _handle_impl is None:
         # Standard error envelope if the file had no implementation
         return {
             "result": None,
             "provenance": {"source": "internal", "path": None},
             "confidence": 0.2,
-            "alerts": [{"level": "error", "message": "No underlying handle implementation found"}],
-            "meta": {"logic": "L-001"}
+            "alerts": [
+                {
+                    "level": "error",
+                    "message": "No underlying handle implementation found",
+                }
+            ],
+            "meta": {"logic": "L-001"},
         }
-    return _handle_impl(payload)
+    out = _handle_impl(payload)
+    try:
+        # Standardize provenance per-key and log deltas/anomalies
+        from helpers.provenance import make_provenance
+        from helpers.history_store import log_with_deltas_and_anomalies
+        from helpers.learning_hooks import score_confidence as _score
+
+        prov = out.get("provenance") or {}
+        prov.setdefault("sources", prov.get("sources", []))
+        prov.setdefault("figures", {})
+        totals = ((out or {}).get("result") or {}).get("totals", {})
+        period = {
+            "start": payload.get("start_date"),
+            "end": payload.get("end_date"),
+        }
+        figure_map = {}
+        if "income_total" in totals:
+            figure_map["income_total"] = {
+                "endpoint": "reports/pnl",
+                "filters": {"section": "income", "period": period},
+            }
+        if "expense_total" in totals:
+            figure_map["expense_total"] = {
+                "endpoint": "reports/pnl",
+                "filters": {"section": "expense", "period": period},
+            }
+        if "profit" in totals:
+            figure_map["profit"] = {
+                "endpoint": "reports/pnl",
+                "filters": {"section": "summary", "period": period},
+            }
+        prov["figures"].update(make_provenance(**figure_map))
+        out["provenance"] = prov
+
+        pack = log_with_deltas_and_anomalies(
+            "L-001", payload, out.get("result") or {}, prov
+        )
+        extra_alerts = pack.get("alerts", [])
+        if extra_alerts:
+            out["alerts"] = list(out.get("alerts", [])) + extra_alerts
+
+        validations_failed = (
+            1
+            if any(
+                isinstance(a, str) and "unbalanced" in a.lower()
+                for a in out.get("alerts", [])
+            )
+            else 0
+        )
+        new_conf = _score(
+            sample_size=int(payload.get("sample_size", 1) or 1),
+            anomalies=len(pack.get("anomalies", []) or []),
+            validations_failed=validations_failed,
+        )
+        try:
+            out["confidence"] = max(float(out.get("confidence", 0.0)), float(new_conf))
+        except Exception:
+            out["confidence"] = float(new_conf)
+    except Exception:
+        # Non-fatal; keep original output
+        pass
+    return out
+
+
 # ------------------------------------------------------------------------------
+
+
+def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
+    # Call legacy compute (now handle_impl). It may already return contract-shaped output.
+    core_out = handle_impl(payload)
+
+    # If core_out already looks contract-compliant, validate and return as-is.
+    if isinstance(core_out, dict) and all(
+        k in core_out for k in ("result", "provenance", "confidence", "alerts")
+    ):
+        try:
+            validate_output_contract(core_out)
+        except Exception:
+            # If legacy contract is off, fall back to wrapper path below.
+            pass
+        else:
+            return core_out
+
+    # Otherwise, treat core_out as the raw result payload.
+    result = core_out if isinstance(core_out, dict) else {"value": core_out}
+
+    # Non-fatal accounting validation
+    validations_failed = 0
+    try:
+        validate_accounting(result)
+    except Exception:
+        validations_failed += 1
+
+    # Minimal provenance (period-aware)
+    prov = make_provenance(
+        result={
+            "endpoint": "reports/auto",
+            "ids": [],
+            "filters": {"period": payload.get("period")},
+        }
+    )
+
+    # History + Deltas + Anomalies
+    logic_id = globals().get("LOGIC_ID")
+    alerts_pack = log_with_deltas_and_anomalies(
+        logic_id if isinstance(logic_id, str) else "L-XXX",
+        payload,
+        result,
+        prov,
+        period_key=payload.get("period"),
+    )
+
+    # Confidence scorer (learnable)
+    sample_size = 1
+    try:
+        sample_size = max(1, len(result))  # if dict, len = #keys
+    except Exception:
+        sample_size = 1
+
+    confidence = score_confidence(
+        sample_size=sample_size,
+        anomalies=(
+            len(alerts_pack.get("anomalies", []))
+            if isinstance(alerts_pack, dict)
+            else 0
+        ),
+        validations_failed=validations_failed,
+    )
+
+    # Convert string alerts to dict format for schema compliance
+    raw_alerts = alerts_pack.get("alerts", []) if isinstance(alerts_pack, dict) else []
+    alerts = []
+    for alert in raw_alerts:
+        if isinstance(alert, str):
+            alerts.append({"msg": alert, "level": "info"})
+        elif isinstance(alert, dict):
+            alerts.append(alert)
+        else:
+            alerts.append({"msg": str(alert), "level": "info"})
+
+    output = {
+        "result": result,
+        "provenance": prov,
+        "confidence": confidence,
+        "alerts": alerts,
+        "meta": {
+
+                    **LOGIC_META,
+
+                    "strategy": "l4-v0",
+
+                    "org_id": payload.get("org_id", "unknown"),
+
+                    "query": payload.get("query", ""),
+
+                    "notes": [],
+
+                },
+    }
+    validate_output_contract(output)
+    return output
+
+
+# Export wrapper as the official handler
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    return handle_l4(payload)

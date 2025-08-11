@@ -23,5 +23,5 @@ def test_basic_shape():
 
 def test_summary_keys_from_rules():
     out = handle(make_payload())
-    summary = out["result"].get("summary", {})
+    summary = out["result"]["result"].get("summary", {})
     assert set(summary.keys()) >= {"filed", "pending", "late"}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Any, Dict
+from helpers.provenance import validate_provenance
 
 # Minimal per-logic schema registry with sensible defaults
 _BASE_INPUT: Dict[str, Any] = {
@@ -57,3 +58,60 @@ def ensure_all_logic_defaults(ids: list[str]) -> None:
     for lid in ids:
         _INPUT_SCHEMAS.setdefault(lid, _BASE_INPUT)
         _OUTPUT_SCHEMAS.setdefault(lid, _BASE_OUTPUT)
+
+
+# --- Additive contract validation helpers ---
+_OUTPUT_REQUIREMENTS = {
+    "provenance": dict,
+    "confidence": (int, float),
+    "result": dict,
+    "alerts": list,
+}
+
+
+def validate_output_contract(payload: Dict[str, Any]) -> None:
+    for field, typ in _OUTPUT_REQUIREMENTS.items():
+        if field not in payload:
+            raise ValueError(f"Missing required output field: {field}")
+        if not isinstance(payload[field], typ):
+            raise TypeError(
+                f"Field `{field}` must be {typ}, got {type(payload[field])}"
+            )
+    # Deep checks
+    validate_provenance(payload["provenance"])
+    _validate_alerts(payload["alerts"])
+
+
+def _validate_alerts(alerts: Any) -> None:
+    if not isinstance(alerts, list):
+        raise TypeError("alerts must be a list")
+    for i, a in enumerate(alerts):
+        if not isinstance(a, dict):
+            raise TypeError(f"alerts[{i}] must be dict")
+        # relaxed minimum: require 'level' and 'msg' where present; allow 'msg'-only
+        if "msg" not in a:
+            raise ValueError(f"alerts[{i}] missing 'msg'")
+        if "level" in a and not isinstance(a["level"], (str,)):
+            raise TypeError(f"alerts[{i}].level must be str")
+        if not isinstance(a.get("msg", ""), (str,)):
+            raise TypeError(f"alerts[{i}].msg must be str")
+
+
+def register_schema(
+    logic_id: str, input_schema_ref: str, output_schema_ref: str
+) -> None:
+    # Placeholder for future external registry integration
+    if not logic_id:
+        return
+
+
+def save_learned_format(name: str, mapping: Dict[str, Any], target_path: str) -> str:
+    """
+    Save a learned report mapping (field -> zoho path/filters) for reuse.
+    """
+    import json, os
+
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    with open(target_path, "w", encoding="utf-8") as f:
+        json.dump({"name": name, "mapping": mapping}, f, ensure_ascii=False, indent=2)
+    return target_path

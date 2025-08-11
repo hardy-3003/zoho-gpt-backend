@@ -1,0 +1,19 @@
+{
+  "name": "mis_fixture_v1",
+  "mapping": {
+    "Revenue": {
+      "endpoint": "reports/pnl",
+      "ids": [],
+      "filters": {
+        "section": "income"
+      }
+    },
+    "Expenses": {
+      "endpoint": "reports/pnl",
+      "ids": [],
+      "filters": {
+        "section": "expense"
+      }
+    }
+  }
+}

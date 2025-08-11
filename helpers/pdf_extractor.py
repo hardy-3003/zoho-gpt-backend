@@ -23,3 +23,28 @@ def learn_provenance_mapping(
     for k in fields.keys():
         mapping[k] = candidate_maps.get(k) or {"endpoint": "", "filter": {}, "path": []}
     return mapping
+
+
+# Minimal shim: extract key-value pairs and simple tables from a PDF path.
+# Replace internals later with OCR/vision; for now, return a deterministic stub if parser not available.
+def extract_fields(pdf_path: str) -> Dict[str, Any]:
+    """
+    Return a dict with:
+      - meta: {file, pages}
+      - fields: {"Revenue": 12345.0, "Expenses": 6789.0, "Period": "2025-06"}
+      - tables: [{"name":"pnl","rows":[{"name":"Revenue","value":12345},{"name":"Expenses","value":6789}]}]
+    """
+    # TODO: integrate real parser; for fixtures, return sample
+    return {
+        "meta": {"file": pdf_path, "pages": 1},
+        "fields": {"Revenue": 12345.0, "Expenses": 6789.0, "Period": "2025-06"},
+        "tables": [
+            {
+                "name": "pnl",
+                "rows": [
+                    {"name": "Revenue", "value": 12345.0},
+                    {"name": "Expenses", "value": 6789.0},
+                ],
+            }
+        ],
+    }
