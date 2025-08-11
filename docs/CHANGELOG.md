@@ -19,3 +19,4 @@
   - Augmented `logics/logic_001_profit_and_loss_summary.py` and `logics/logic_006_zone_wise_expenses.py` to add per-figure provenance, history logging, and confidence refinement.
   - Added developer template `docs/dev_templates/logic_with_learning.md`.
   - Wave 2: Applied L4 wrapper to Logic_013–Logic_022 (additive only; provenance/history/confidence); added parametric contract tests.
+  - Wave 3: Applied L4 wrapper to Logic_023–Logic_030 (additive only; provenance/history/confidence); added parametric contract tests for the batch.

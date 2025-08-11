@@ -17,7 +17,10 @@ def post(path, data):
     req = Request(
         f"{BASE}{path}",
         data=body,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {TOKEN}"},
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {TOKEN}",
+        },
         method="POST",
     )
     return json.loads(urlopen(req, timeout=30).read().decode("utf-8"))
@@ -79,4 +82,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
