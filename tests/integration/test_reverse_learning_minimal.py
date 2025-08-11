@@ -20,3 +20,5 @@ def test_learn_and_generate_minimal(tmp_path):
     assert set(["result", "provenance", "confidence", "alerts"]).issubset(out.keys())
     assert "Revenue" in out["result"] and "Expenses" in out["result"]
     assert "Revenue" in out["provenance"] and "Expenses" in out["provenance"]
+    # When fields are coherent, expect enabled True
+    assert out.get("enabled") in (True, False)

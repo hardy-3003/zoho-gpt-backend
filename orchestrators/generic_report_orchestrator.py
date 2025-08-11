@@ -10,6 +10,7 @@ from helpers.schema_registry import save_learned_format, validate_output_contrac
 from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.learning_hooks import score_confidence
+from helpers.reconciliation import reconcile_totals
 
 
 def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput:
@@ -93,13 +94,27 @@ def generate_from_learned(
     )
     # Normalize alerts to contract shape (list[dict])
     raw_alerts = alerts_pack.get("alerts", []) or []
-    norm_alerts = [a if isinstance(a, dict) else {"level": "info", "msg": str(a)} for a in raw_alerts]
+    norm_alerts = [
+        a if isinstance(a, dict) else {"level": "info", "msg": str(a)}
+        for a in raw_alerts
+    ]
+
+    # Reconciliation check and auto-enable
+    ok, recon = reconcile_totals(result)
+    alerts = norm_alerts
+    if recon.get("checks"):
+        # append structured reconciliation findings
+        for c in recon["checks"]:
+            if "msg" in c:
+                c.setdefault("level", "warn")
+        alerts.extend(recon["checks"])
 
     out = {
         "result": result,
         "provenance": provenance,
         "confidence": confidence,
-        "alerts": norm_alerts,
+        "alerts": alerts,
+        "enabled": bool(ok),  # auto-enable only when reconciliation passes
     }
     validate_output_contract(out)
     return out
