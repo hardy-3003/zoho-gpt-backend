@@ -60,12 +60,16 @@ def ensure_all_logic_defaults(ids: list[str]) -> None:
 
 
 # --- Additive contract validation helpers ---
+_OUTPUT_REQUIREMENTS = {
+    "provenance": dict,
+    "confidence": (int, float),
+    "result": dict,
+    "alerts": list,
+}
+
+
 def validate_output_contract(payload: Dict[str, Any]) -> None:
-    required = {
-        "provenance": dict,
-        "confidence": (int, float),
-    }
-    for field, typ in required.items():
+    for field, typ in _OUTPUT_REQUIREMENTS.items():
         if field not in payload:
             raise ValueError(f"Missing required output field: {field}")
         if not isinstance(payload[field], typ):
