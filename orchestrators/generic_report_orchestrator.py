@@ -11,6 +11,7 @@ from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.learning_hooks import score_confidence
 from helpers.reconciliation import reconcile_totals
+from helpers.obs import with_metrics
 
 
 def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput:
@@ -63,6 +64,7 @@ def learn_from_pdf(pdf_path: str, name: str = "mis_fixture_v1") -> Dict[str, Any
     return {"meta": parsed.get("meta", {}), "mapping_path": path, "mapping": mapping}
 
 
+@with_metrics("orchestrator.rl.generate_from_learned")
 def generate_from_learned(
     payload: Dict[str, Any], mapping: Dict[str, Any]
 ) -> Dict[str, Any]:

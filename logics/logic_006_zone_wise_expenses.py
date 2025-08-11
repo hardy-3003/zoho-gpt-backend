@@ -23,6 +23,17 @@ except Exception:  # pragma: no cover
             return None
 
 
+try:
+    from helpers.obs import with_metrics  # type: ignore
+except Exception:  # pragma: no cover
+
+    def with_metrics(name: str):  # type: ignore
+        def deco(fn):
+            return fn
+
+        return deco
+
+
 LOGIC_META = {
     "id": "L-006",
     "title": "Zone-wise Expenses",
@@ -66,6 +77,7 @@ def _learn_from_history(
     return {"notes": []}
 
 
+@with_metrics("logic.L-006.handle")
 def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     org_id = payload.get("org_id")
     start_date = payload.get("start_date")
