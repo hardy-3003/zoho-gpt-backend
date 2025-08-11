@@ -7,6 +7,12 @@ from core.operate_base import OperateInput
 from core.registry import route
 
 from core.registry import _REGISTRY  # add near other imports at the top if not present
+from typing import Any, Dict
+from orchestrators.generic_report_orchestrator import (
+    learn_from_pdf,
+    generate_from_learned,
+)
+import json, os
 from core.logic_loader import load_all_logics, plan_from_query
 
 # Import modules for side-effects so they self-register in the registry
@@ -298,3 +304,23 @@ async def mcp_stream(request: Request, authorization: str = Header(None)):
         yield 'data: {"stage": "done"}\n\n'
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+# === Reverse-Learning minimal endpoints ===
+@app.post("/rl/learn")
+async def rl_learn(payload: Dict[str, Any]):
+    """
+    Learn a PDF format and persist mapping to /docs/learned_formats/*.json
+    """
+    return learn_from_pdf(payload["pdf_path"], payload.get("name", "mis_fixture_v1"))
+
+
+@app.post("/rl/generate")
+async def rl_generate(payload: Dict[str, Any]):
+    """
+    Use a learned mapping to produce a contract-compliant output.
+    payload: {"learned_path":"docs/learned_formats/mis_fixture_v1.json","source_fields":{...}, "period":"2025-06"}
+    """
+    with open(payload["learned_path"], "r", encoding="utf-8") as f:
+        mapping = json.load(f).get("mapping", {})
+    return generate_from_learned(payload, mapping)

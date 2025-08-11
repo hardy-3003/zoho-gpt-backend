@@ -103,3 +103,15 @@ def register_schema(
     # Placeholder for future external registry integration
     if not logic_id:
         return
+
+
+def save_learned_format(name: str, mapping: Dict[str, Any], target_path: str) -> str:
+    """
+    Save a learned report mapping (field -> zoho path/filters) for reuse.
+    """
+    import json, os
+
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    with open(target_path, "w", encoding="utf-8") as f:
+        json.dump({"name": name, "mapping": mapping}, f, ensure_ascii=False, indent=2)
+    return target_path
