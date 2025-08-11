@@ -1,3 +1,5 @@
+from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+
 """
 Title: Bill Of Materials Breakdown
 ID: L-058
@@ -5,7 +7,8 @@ Tags: []
 Required Inputs: schema://bill_of_materials_breakdown.input.v1
 Outputs: schema://bill_of_materials_breakdown.output.v1
 Assumptions:
-Evolution Notes: L4 wrapper (provenance, history, confidence); additive only."""
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 
 from typing import Dict, Any, List
 from helpers.learning_hooks import score_confidence
@@ -239,6 +242,8 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
+    
+        "meta": LOGIC_META,
     }
     validate_output_contract(output)
     return output

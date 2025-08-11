@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RANGE="${1:-061-200}"          # e.g. 001-200 or 061-200
+RANGE="${1:-001-200}"          # e.g. 001-200 or 061-200
 TAG="${2:-}"                   # optional git tag name
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

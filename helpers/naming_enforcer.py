@@ -13,16 +13,20 @@ def scan_logic_docstring_id(src: str) -> str | None:
     """
     try:
         mod = ast.parse(src)
-        if (
-            isinstance(mod.body[0], ast.Expr)
-            and isinstance(mod.body[0].value, ast.Constant)
-            and isinstance(mod.body[0].value.value, str)
-        ):
-            doc = mod.body[0].value.value
-            for line in doc.splitlines():
-                m = ID_LINE_RE.match(line.strip())
-                if m:
-                    return m.group(1)
+        # Look through the first few expressions for a docstring
+        for expr in mod.body[:5]:  # Check first 5 expressions
+            if (
+                isinstance(expr, ast.Expr)
+                and isinstance(expr.value, ast.Constant)
+                and isinstance(expr.value.value, str)
+            ):
+                doc = expr.value.value
+                # Check if this looks like a docstring (contains Title: or ID:)
+                if "Title:" in doc or "ID:" in doc:
+                    for line in doc.splitlines():
+                        m = ID_LINE_RE.match(line.strip())
+                        if m:
+                            return m.group(1)
     except Exception:
         pass
     return None

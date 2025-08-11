@@ -1,3 +1,5 @@
+from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+
 """
 Title: High Risk Vendor Pattern
 ID: L-116
@@ -192,6 +194,8 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
+    
+        "meta": LOGIC_META,
     }
     validate_output_contract(output)
     return output

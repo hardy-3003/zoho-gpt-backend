@@ -1,3 +1,5 @@
+from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+
 """
 Title: Tds Deducted Vs Paid
 ID: L-041
@@ -5,7 +7,8 @@ Tags: []
 Required Inputs: schema://tds_deducted_vs_paid.input.v1
 Outputs: schema://tds_deducted_vs_paid.output.v1
 Assumptions:
-Evolution Notes: L4 wrapper (provenance, history, confidence); additive only."""
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 
 from helpers.learning_hooks import score_confidence
 from helpers.history_store import log_with_deltas_and_anomalies
@@ -202,6 +205,8 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
+    
+        "meta": LOGIC_META,
     }
     validate_output_contract(output)
     return output
