@@ -14,6 +14,7 @@ from orchestrators.generic_report_orchestrator import (
 )
 import json, os
 from core.logic_loader import load_all_logics, plan_from_query
+from orchestrators.mis_orchestrator import NodeSpec, run_dag
 
 # Import modules for side-effects so they self-register in the registry
 # (do not remove even if they look unused)
@@ -292,18 +293,32 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
         )
 
 
-# Optional: simple SSE stream for progress (placeholder)
 @app.post("/mcp/stream")
 async def mcp_stream(request: Request, authorization: str = Header(None)):
     if authorization != f"Bearer {MCP_SECRET}":
         return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
-    async def event_generator():
-        yield 'data: {"stage": "planning"}\n\n'
-        yield 'data: {"stage": "executing"}\n\n'
-        yield 'data: {"stage": "done"}\n\n'
+    try:
+        body = await request.json()
+        nodes = [NodeSpec(**n) for n in body.get("nodes", [])]
+        edges = [tuple(e) for e in body.get("edges", [])]
+        pl = body.get("payload", {})
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+        async def event_generator():
+            queue: list[dict[str, Any]] = []
+
+            def cb(evt: dict[str, Any]):
+                queue.append(evt)
+
+            results = run_dag(nodes, edges, pl, progress_cb=cb)
+            for evt in queue:
+                yield (json.dumps(evt) + "\n")
+            yield (json.dumps({"stage": "complete"}) + "\n")
+            yield (json.dumps({"results": list(results.keys())}) + "\n")
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # === Reverse-Learning minimal endpoints ===
