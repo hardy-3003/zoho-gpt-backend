@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Tuple, Optional
 from .history_store import append_event
 
 
-STRATEGY_DIR = os.path.join(os.getcwd(), "data", "strategies")
+ROOT_DIR = os.environ.get("DATA_DIR") or os.path.join(os.getcwd(), "data")
+STRATEGY_DIR = os.path.join(ROOT_DIR, "strategies")
 
 
 def _ensure_dir(path: str) -> None:

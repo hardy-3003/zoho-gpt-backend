@@ -1,4 +1,8 @@
 from typing import Dict, Any, List
+from helpers.provenance import make_provenance
+from helpers.history_store import log_with_deltas_and_anomalies
+from helpers.learning_hooks import score_confidence as _score
+from helpers.schema_registry import validate_output_contract
 
 try:
     from helpers.zoho_client import get_json
@@ -95,7 +99,7 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not result else 0.0)
     conf = max(0.1, min(0.95, conf))
 
-    return {
+    out = {
         "result": result,
         "provenance": {"sources": sources},
         "confidence": conf,
@@ -107,3 +111,38 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
             "notes": learn.get("notes", []),
         },
     }
+
+    try:
+        prov = out.get("provenance") or {}
+        prov.setdefault("sources", prov.get("sources", []))
+        prov.setdefault("figures", {})
+        prov["figures"].update(
+            make_provenance(
+                totals={
+                    "endpoint": "reports/auto",
+                    "filters": {"period": {"start": start_date, "end": end_date}},
+                }
+            )
+        )
+        out["provenance"] = prov
+
+        pack = log_with_deltas_and_anomalies(
+            LOGIC_META["id"],
+            payload,
+            out.get("result") or {},
+            prov,
+            period_key=payload.get("period"),
+        )
+        if pack.get("alerts"):
+            out["alerts"] = list(out.get("alerts", [])) + pack.get("alerts", [])
+        new_conf = _score(
+            sample_size=max(1, len(out.get("result") or {})),
+            anomalies=len(pack.get("anomalies", []) or []),
+            validations_failed=0,
+        )
+        out["confidence"] = max(float(out.get("confidence", 0.0)), float(new_conf))
+        validate_output_contract(out)
+    except Exception:
+        pass
+
+    return out

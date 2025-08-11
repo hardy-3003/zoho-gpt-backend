@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Any, Dict
+from helpers.provenance import validate_provenance
 
 # Minimal per-logic schema registry with sensible defaults
 _BASE_INPUT: Dict[str, Any] = {
@@ -76,6 +77,24 @@ def validate_output_contract(payload: Dict[str, Any]) -> None:
             raise TypeError(
                 f"Field `{field}` must be {typ}, got {type(payload[field])}"
             )
+    # Deep checks
+    validate_provenance(payload["provenance"])
+    _validate_alerts(payload["alerts"])
+
+
+def _validate_alerts(alerts: Any) -> None:
+    if not isinstance(alerts, list):
+        raise TypeError("alerts must be a list")
+    for i, a in enumerate(alerts):
+        if not isinstance(a, dict):
+            raise TypeError(f"alerts[{i}] must be dict")
+        # relaxed minimum: require 'level' and 'msg' where present; allow 'msg'-only
+        if "msg" not in a:
+            raise ValueError(f"alerts[{i}] missing 'msg'")
+        if "level" in a and not isinstance(a["level"], (str,)):
+            raise TypeError(f"alerts[{i}].level must be str")
+        if not isinstance(a.get("msg", ""), (str,)):
+            raise TypeError(f"alerts[{i}].msg must be str")
 
 
 def register_schema(

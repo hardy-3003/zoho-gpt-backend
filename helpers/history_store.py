@@ -6,7 +6,8 @@ import time
 from typing import Any, Dict, List, Optional
 
 
-BASE_DIR = os.path.join(os.getcwd(), "data", "history")
+_ROOT = os.environ.get("DATA_DIR") or os.path.join(os.getcwd(), "data")
+BASE_DIR = os.path.join(_ROOT, "history")
 
 # Optional analyzers (best-effort)
 try:

@@ -13,6 +13,7 @@
   - Set up feature branch and pre-change tag.
 
 - 2025-08-11: Phase 1 foundation
+  - Wave 4: Applied L4 wrapper to Logic_031–Logic_040 (ops/inventory KPIs). Added parametric contract tests; seeded minimal domain provenance for inventory/ops logics.
   - Added standardized provenance helper `helpers/provenance.py` and enhanced history wrapper in `helpers/history_store.py`.
   - Extended `helpers/learning_hooks.py` with strategy helpers and a flexible `score_confidence` supporting new signature.
   - Added output contract validator in `helpers/schema_registry.py`.
@@ -20,3 +21,4 @@
   - Added developer template `docs/dev_templates/logic_with_learning.md`.
   - Wave 2: Applied L4 wrapper to Logic_013–Logic_022 (additive only; provenance/history/confidence); added parametric contract tests.
   - Wave 3: Applied L4 wrapper to Logic_023–Logic_030 (additive only; provenance/history/confidence); added parametric contract tests for the batch.
+  - Schema hardening: added provenance validator + alerts item checks; added DATA_DIR support for history/strategy stores for container-safe writes.
