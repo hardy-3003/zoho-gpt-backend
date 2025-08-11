@@ -1,9 +1,9 @@
 """
-Title: Upcoming Bill Payments
-ID: L-047
+Title: Upcoming Invoice Dues
+ID: L-046
 Tags: []
-Required Inputs: schema://upcoming_bill_payments.input.v1
-Outputs: schema://upcoming_bill_payments.output.v1
+Required Inputs: schema://upcoming_invoice_dues.input.v1
+Outputs: schema://upcoming_invoice_dues.output.v1
 Assumptions:
 Evolution Notes: L4 wrapper (provenance, history, confidence); additive only."""
 
@@ -14,7 +14,7 @@ from helpers.rules_engine import validate_accounting
 from helpers.provenance import make_provenance
 from helpers.schema_registry import validate_output_contract
 
-LOGIC_ID = "L-047"
+LOGIC_ID = "L-046"
 
 
 from datetime import datetime
@@ -37,26 +37,26 @@ except Exception:
 
 
 LOGIC_META = {
-    "id": "L-047",
-    "title": "Upcoming Bill Payments",
-    "tags": ["ap", "due", "alerts"],
+    "id": "L-046",
+    "title": "Upcoming Invoice Dues",
+    "tags": ["ar", "due", "alerts"],
 }
 
 
-def _validate_upcoming_bills(result: Dict[str, Any]) -> List[str]:
+def _validate_upcoming_invoices(result: Dict[str, Any]) -> List[str]:
     alerts: List[str] = []
-    bills = result.get("bills", [])
+    invoices = result.get("invoices", [])
     totals = result.get("totals", {})
-    if int(totals.get("count", 0) or 0) != len(bills):
+    if int(totals.get("count", 0) or 0) != len(invoices):
         alerts.append("count_mismatch")
-    sum_amount = sum(float((x.get("amount", 0.0) or 0.0)) for x in bills)
+    sum_amount = sum(float((x.get("amount", 0.0) or 0.0)) for x in invoices)
     if abs(sum_amount - float(totals.get("amount", 0.0) or 0.0)) > 0.01:
         alerts.append("amount_total_mismatch")
-    for b in bills:
-        if int(b.get("days_to_due", 0) or 0) < -365:
-            alerts.append(f"days_to_due_out_of_bounds:{b.get('bill','')}")
-        if int(b.get("days_to_due", 0) or 0) < 0:
-            alerts.append(f"overdue:{b.get('bill','')}")
+    for inv in invoices:
+        if int(inv.get("days_to_due", 0) or 0) < -365:
+            alerts.append(f"days_to_due_out_of_bounds:{inv.get('invoice','')}")
+        if int(inv.get("days_to_due", 0) or 0) < 0:
+            alerts.append(f"overdue:{inv.get('invoice','')}")
     return alerts
 
 
@@ -128,7 +128,7 @@ def _days_between(d1: str, d2: str) -> int:
         return 0
 
 
-def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     org_id = payload.get("org_id")
     start_date = payload.get("start_date")
     end_date = payload.get("end_date")
@@ -140,13 +140,13 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
 
     try:
-        bills_url = f"{api_domain}/books/v3/bills?status=unpaid&due_start={start_date}&due_end={end_date}&organization_id={org_id}"
-        sources.append(bills_url)
-        _ = get_json(bills_url, headers)
+        inv_url = f"{api_domain}/books/v3/invoices?status=unpaid&due_start={start_date}&due_end={end_date}&organization_id={org_id}"
+        sources.append(inv_url)
+        _ = get_json(inv_url, headers)
 
         result = {
             "period": {"start": start_date, "end": end_date},
-            "bills": [],
+            "invoices": [],
             "totals": {"count": 0, "amount": 0.0},
         }
     except Exception as e:
@@ -158,7 +158,7 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
             "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
         }
 
-    alerts = _validate_upcoming_bills(result)
+    alerts = _validate_upcoming_invoices(result)
     learn = _learn_from_history(payload, result)
     conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not result else 0.0)
     conf = max(0.1, min(0.95, conf))
@@ -228,26 +228,14 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         validations_failed=validations_failed,
     )
 
-    # Convert string alerts to dict format for schema compliance
-    raw_alerts = alerts_pack.get("alerts", []) if isinstance(alerts_pack, dict) else []
-    alerts = []
-    for alert in raw_alerts:
-        if isinstance(alert, str):
-            alerts.append({"msg": alert, "level": "info"})
-        elif isinstance(alert, dict):
-            alerts.append(alert)
-        else:
-            alerts.append({"msg": str(alert), "level": "info"})
-    
     output = {
         "result": result,
         "provenance": prov,
         "confidence": confidence,
-        "alerts": alerts,
+        "alerts": (alerts_pack.get("alerts", []) if isinstance(alerts_pack, dict) else []),
     }
     validate_output_contract(output)
     return output
 
 # Export wrapper as the official handler
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    return handle_l4(payload)
+handle = handle_l4

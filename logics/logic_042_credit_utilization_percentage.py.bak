@@ -1,9 +1,9 @@
 """
-Title: Expense Forecast
-ID: L-045
+Title: Credit Utilization Percentage
+ID: L-042
 Tags: []
-Required Inputs: schema://expense_forecast.input.v1
-Outputs: schema://expense_forecast.output.v1
+Required Inputs: schema://credit_utilization_percentage.input.v1
+Outputs: schema://credit_utilization_percentage.output.v1
 Assumptions:
 Evolution Notes: L4 wrapper (provenance, history, confidence); additive only."""
 
@@ -13,9 +13,8 @@ from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.rules_engine import validate_accounting
 from helpers.provenance import make_provenance
 from helpers.schema_registry import validate_output_contract
-from typing import Any, Dict
 
-LOGIC_ID = "L-045"
+LOGIC_ID = "L-042"
 
 
 try:
@@ -35,19 +34,21 @@ except Exception:
 
 
 LOGIC_META = {
-    "id": "L-045",
-    "title": "Expense Forecast",
-    "tags": ["forecast", "expenses"],
+    "id": "L-042",
+    "title": "Credit Utilization %",
+    "tags": ["credit", "utilization", "ap", "ar"],
 }
 
 
-def _validate_expense_forecast(result: Dict[str, Any]) -> List[str]:
+def _validate_credit_util(result: Dict[str, Any]) -> List[str]:
     alerts: List[str] = []
-    forecast = result.get("forecast", [])
-    if any((f.get("expense", 0.0) or 0.0) < 0 for f in forecast):
-        alerts.append("negative_expense")
-    if len(forecast) < 3:
-        alerts.append("data_scarce")
+    util = result.get("utilization", {})
+    for k in ["ap_pct", "ar_pct"]:
+        v = util.get(k)
+        if v is None:
+            continue
+        if v < 0 or v > 200:
+            alerts.append(f"{k}_out_of_bounds")
     return alerts
 
 
@@ -67,7 +68,7 @@ def _learn_from_history(
     return {"notes": []}
 
 
-def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     # === Keep existing deterministic compute as-is (AEP §6 No Rewrites) ===
     # If this module uses a different function name (e.g., run/execute/build_report), use that name here.
     result = compute(payload)  # replace name if different in this file
@@ -110,7 +111,7 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
     return output
 
 
-def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     org_id = payload.get("org_id")
     start_date = payload.get("start_date")
     end_date = payload.get("end_date")
@@ -122,14 +123,16 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
 
     try:
-        bills_url = f"{api_domain}/books/v3/bills?date_start={start_date}&date_end={end_date}&organization_id={org_id}"
-        sources.append(bills_url)
-        _ = get_json(bills_url, headers)
+        inv_url = f"{api_domain}/books/v3/invoices?date_start={start_date}&date_end={end_date}&organization_id={org_id}"
+        bill_url = f"{api_domain}/books/v3/bills?date_start={start_date}&date_end={end_date}&organization_id={org_id}"
+        sources.extend([inv_url, bill_url])
+        _ = get_json(inv_url, headers)
+        _ = get_json(bill_url, headers)
 
         result = {
             "period": {"start": start_date, "end": end_date},
-            "forecast": [],
-            "method": "simple-moving-avg",
+            "utilization": {"ap_pct": None, "ar_pct": None},
+            "notes": [],
         }
     except Exception as e:
         return {
@@ -140,7 +143,7 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
             "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
         }
 
-    alerts = _validate_expense_forecast(result)
+    alerts = _validate_credit_util(result)
     learn = _learn_from_history(payload, result)
     conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not result else 0.0)
     conf = max(0.1, min(0.95, conf))
@@ -157,79 +160,3 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
             "notes": learn.get("notes", []),
         },
     }
-
-def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
-    # Call legacy compute (now handle_impl). It may already return contract-shaped output.
-    core_out = handle_impl(payload)
-
-    # If core_out already looks contract-compliant, validate and return as-is.
-    if isinstance(core_out, dict) and        all(k in core_out for k in ("result","provenance","confidence","alerts")):
-        try:
-            validate_output_contract(core_out)
-        except Exception:
-            # If legacy contract is off, fall back to wrapper path below.
-            pass
-        else:
-            return core_out
-
-    # Otherwise, treat core_out as the raw result payload.
-    result = core_out if isinstance(core_out, dict) else {"value": core_out}
-
-    # Non-fatal accounting validation
-    validations_failed = 0
-    try:
-        validate_accounting(result)
-    except Exception:
-        validations_failed += 1
-
-    # Minimal provenance (period-aware)
-    prov = make_provenance(
-        result={"endpoint": "reports/auto", "ids": [], "filters": {"period": payload.get("period")}}
-    )
-
-    # History + Deltas + Anomalies
-    logic_id = globals().get("LOGIC_ID")
-    alerts_pack = log_with_deltas_and_anomalies(
-        logic_id if isinstance(logic_id, str) else "L-XXX",
-        payload,
-        result,
-        prov,
-        period_key=payload.get("period"),
-    )
-
-    # Confidence scorer (learnable)
-    sample_size = 1
-    try:
-        sample_size = max(1, len(result))  # if dict, len = #keys
-    except Exception:
-        sample_size = 1
-
-    confidence = score_confidence(
-        sample_size=sample_size,
-        anomalies=len(alerts_pack.get("anomalies", [])) if isinstance(alerts_pack, dict) else 0,
-        validations_failed=validations_failed,
-    )
-
-    # Convert string alerts to dict format for schema compliance
-    raw_alerts = alerts_pack.get("alerts", []) if isinstance(alerts_pack, dict) else []
-    alerts = []
-    for alert in raw_alerts:
-        if isinstance(alert, str):
-            alerts.append({"msg": alert, "level": "info"})
-        elif isinstance(alert, dict):
-            alerts.append(alert)
-        else:
-            alerts.append({"msg": str(alert), "level": "info"})
-    
-    output = {
-        "result": result,
-        "provenance": prov,
-        "confidence": confidence,
-        "alerts": alerts,
-    }
-    validate_output_contract(output)
-    return output
-
-# Export wrapper as the official handler
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    return handle_l4(payload)

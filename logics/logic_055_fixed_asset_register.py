@@ -4,14 +4,16 @@ ID: L-055
 Tags: []
 Required Inputs: schema://fixed_asset_register.input.v1
 Outputs: schema://fixed_asset_register.output.v1
-Assumptions: 
+Assumptions:
 Evolution Notes: L4 wrapper (provenance, history, confidence); additive only."""
+
 from typing import Dict, Any, List
 from helpers.learning_hooks import score_confidence
 from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.rules_engine import validate_accounting
 from helpers.provenance import make_provenance
 from helpers.schema_registry import validate_output_contract
+from typing import Any, Dict
 
 LOGIC_ID = "L-055"
 
@@ -66,8 +68,15 @@ def _learn_from_history(
             LOGIC_META["id"],
             {
                 "org_id": payload.get("org_id"),
-   
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+                "result": result,
+            },
+        )
+    except Exception:
+        pass
+    return {"notes": []}
+
+
+def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
     # === Keep existing deterministic compute as-is (AEP §6 No Rewrites) ===
     # If this module uses a different function name (e.g., run/execute/build_report), use that name here.
     result = compute(payload)  # replace name if different in this file
@@ -81,7 +90,11 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     # Minimal provenance (expand per-figure later per MSOW §2)
     prov = make_provenance(
-        result={"endpoint":"reports/auto","ids":[],"filters":{"period": payload.get("period")}}
+        result={
+            "endpoint": "reports/auto",
+            "ids": [],
+            "filters": {"period": payload.get("period")},
+        }
     )
 
     # History + Deltas + Anomalies (MSOW §5)
@@ -105,7 +118,8 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     validate_output_contract(output)
     return output
 
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+
+def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
     org_id = payload.get("org_id")
     start_date = payload.get("start_date")
     end_date = payload.get("end_date")
@@ -154,3 +168,79 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
             "notes": learn.get("notes", []),
         },
     }
+
+def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
+    # Call legacy compute (now handle_impl). It may already return contract-shaped output.
+    core_out = handle_impl(payload)
+
+    # If core_out already looks contract-compliant, validate and return as-is.
+    if isinstance(core_out, dict) and        all(k in core_out for k in ("result","provenance","confidence","alerts")):
+        try:
+            validate_output_contract(core_out)
+        except Exception:
+            # If legacy contract is off, fall back to wrapper path below.
+            pass
+        else:
+            return core_out
+
+    # Otherwise, treat core_out as the raw result payload.
+    result = core_out if isinstance(core_out, dict) else {"value": core_out}
+
+    # Non-fatal accounting validation
+    validations_failed = 0
+    try:
+        validate_accounting(result)
+    except Exception:
+        validations_failed += 1
+
+    # Minimal provenance (period-aware)
+    prov = make_provenance(
+        result={"endpoint": "reports/auto", "ids": [], "filters": {"period": payload.get("period")}}
+    )
+
+    # History + Deltas + Anomalies
+    logic_id = globals().get("LOGIC_ID")
+    alerts_pack = log_with_deltas_and_anomalies(
+        logic_id if isinstance(logic_id, str) else "L-XXX",
+        payload,
+        result,
+        prov,
+        period_key=payload.get("period"),
+    )
+
+    # Confidence scorer (learnable)
+    sample_size = 1
+    try:
+        sample_size = max(1, len(result))  # if dict, len = #keys
+    except Exception:
+        sample_size = 1
+
+    confidence = score_confidence(
+        sample_size=sample_size,
+        anomalies=len(alerts_pack.get("anomalies", [])) if isinstance(alerts_pack, dict) else 0,
+        validations_failed=validations_failed,
+    )
+
+    # Convert string alerts to dict format for schema compliance
+    raw_alerts = alerts_pack.get("alerts", []) if isinstance(alerts_pack, dict) else []
+    alerts = []
+    for alert in raw_alerts:
+        if isinstance(alert, str):
+            alerts.append({"msg": alert, "level": "info"})
+        elif isinstance(alert, dict):
+            alerts.append(alert)
+        else:
+            alerts.append({"msg": str(alert), "level": "info"})
+    
+    output = {
+        "result": result,
+        "provenance": prov,
+        "confidence": confidence,
+        "alerts": alerts,
+    }
+    validate_output_contract(output)
+    return output
+
+# Export wrapper as the official handler
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    return handle_l4(payload)

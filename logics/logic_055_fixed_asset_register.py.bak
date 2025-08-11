@@ -1,9 +1,9 @@
 """
-Title: Depreciation Calculation
-ID: L-054
+Title: Fixed Asset Register
+ID: L-055
 Tags: []
-Required Inputs: schema://depreciation_calculation.input.v1
-Outputs: schema://depreciation_calculation.output.v1
+Required Inputs: schema://fixed_asset_register.input.v1
+Outputs: schema://fixed_asset_register.output.v1
 Assumptions:
 Evolution Notes: L4 wrapper (provenance, history, confidence); additive only."""
 
@@ -13,9 +13,8 @@ from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.rules_engine import validate_accounting
 from helpers.provenance import make_provenance
 from helpers.schema_registry import validate_output_contract
-from typing import Any, Dict
 
-LOGIC_ID = "L-054"
+LOGIC_ID = "L-055"
 
 
 try:
@@ -35,26 +34,27 @@ except Exception:
 
 
 LOGIC_META = {
-    "id": "L-054",
-    "title": "Depreciation Calculation",
-    "tags": ["depreciation", "fixed assets"],
+    "id": "L-055",
+    "title": "Fixed Asset Register",
+    "tags": ["assets", "register"],
 }
 
 
-def _validate_depreciation(result: Dict[str, Any]) -> List[str]:
+def _validate_far(result: Dict[str, Any]) -> List[str]:
     alerts: List[str] = []
     assets = result.get("assets", [])
-    total = float(result.get("totals", {}).get("depr_amount", 0.0) or 0.0)
-    sum_amt = 0.0
+    total_nbv = float(result.get("totals", {}).get("nbv", 0.0) or 0.0)
+    sum_nbv = 0.0
     for a in assets:
-        rate = float(a.get("rate_pct", 0.0) or 0.0)
-        amt = float(a.get("depr_amount", 0.0) or 0.0)
-        if amt < 0:
-            alerts.append(f"negative_depreciation:{a.get('asset','')}")
-        if rate <= 0 or rate > 100:
-            alerts.append(f"rate_out_of_bounds:{a.get('asset','')}")
-        sum_amt += amt
-    if abs(sum_amt - total) > 0.01:
+        cost = float(a.get("cost", 0.0) or 0.0)
+        acc = float(a.get("acc_depr", 0.0) or 0.0)
+        nbv = float(a.get("nbv", cost - acc))
+        if abs(nbv - (cost - acc)) > 0.01:
+            alerts.append(f"nbv_mismatch:{a.get('asset','')}")
+        if cost < 0 or acc < 0 or nbv < 0:
+            alerts.append(f"negative_values:{a.get('asset','')}")
+        sum_nbv += nbv
+    if abs(sum_nbv - total_nbv) > 0.01:
         alerts.append("totals_mismatch")
     return alerts
 
@@ -75,7 +75,7 @@ def _learn_from_history(
     return {"notes": []}
 
 
-def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     # === Keep existing deterministic compute as-is (AEP §6 No Rewrites) ===
     # If this module uses a different function name (e.g., run/execute/build_report), use that name here.
     result = compute(payload)  # replace name if different in this file
@@ -118,7 +118,7 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
     return output
 
 
-def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     org_id = payload.get("org_id")
     start_date = payload.get("start_date")
     end_date = payload.get("end_date")
@@ -131,13 +131,15 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         fa_url = f"{api_domain}/books/v3/fixedassets?organization_id={org_id}"
-        sources.append(fa_url)
+        journals_url = f"{api_domain}/books/v3/journals?date_end={end_date}&organization_id={org_id}"
+        sources.extend([fa_url, journals_url])
         _ = get_json(fa_url, headers)
+        _ = get_json(journals_url, headers)
 
         result = {
-            "period": {"start": start_date, "end": end_date},
+            "as_of": end_date,
             "assets": [],
-            "totals": {"depr_amount": 0.0},
+            "totals": {"nbv": 0.0},
         }
     except Exception as e:
         return {
@@ -148,7 +150,7 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
             "meta": {"strategy": "l4-v0", "org_id": org_id, "query": query},
         }
 
-    alerts = _validate_depreciation(result)
+    alerts = _validate_far(result)
     learn = _learn_from_history(payload, result)
     conf = 0.6 - (0.15 if alerts else 0.0) - (0.1 if not result else 0.0)
     conf = max(0.1, min(0.95, conf))
@@ -165,79 +167,3 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
             "notes": learn.get("notes", []),
         },
     }
-
-def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
-    # Call legacy compute (now handle_impl). It may already return contract-shaped output.
-    core_out = handle_impl(payload)
-
-    # If core_out already looks contract-compliant, validate and return as-is.
-    if isinstance(core_out, dict) and        all(k in core_out for k in ("result","provenance","confidence","alerts")):
-        try:
-            validate_output_contract(core_out)
-        except Exception:
-            # If legacy contract is off, fall back to wrapper path below.
-            pass
-        else:
-            return core_out
-
-    # Otherwise, treat core_out as the raw result payload.
-    result = core_out if isinstance(core_out, dict) else {"value": core_out}
-
-    # Non-fatal accounting validation
-    validations_failed = 0
-    try:
-        validate_accounting(result)
-    except Exception:
-        validations_failed += 1
-
-    # Minimal provenance (period-aware)
-    prov = make_provenance(
-        result={"endpoint": "reports/auto", "ids": [], "filters": {"period": payload.get("period")}}
-    )
-
-    # History + Deltas + Anomalies
-    logic_id = globals().get("LOGIC_ID")
-    alerts_pack = log_with_deltas_and_anomalies(
-        logic_id if isinstance(logic_id, str) else "L-XXX",
-        payload,
-        result,
-        prov,
-        period_key=payload.get("period"),
-    )
-
-    # Confidence scorer (learnable)
-    sample_size = 1
-    try:
-        sample_size = max(1, len(result))  # if dict, len = #keys
-    except Exception:
-        sample_size = 1
-
-    confidence = score_confidence(
-        sample_size=sample_size,
-        anomalies=len(alerts_pack.get("anomalies", [])) if isinstance(alerts_pack, dict) else 0,
-        validations_failed=validations_failed,
-    )
-
-    # Convert string alerts to dict format for schema compliance
-    raw_alerts = alerts_pack.get("alerts", []) if isinstance(alerts_pack, dict) else []
-    alerts = []
-    for alert in raw_alerts:
-        if isinstance(alert, str):
-            alerts.append({"msg": alert, "level": "info"})
-        elif isinstance(alert, dict):
-            alerts.append(alert)
-        else:
-            alerts.append({"msg": str(alert), "level": "info"})
-    
-    output = {
-        "result": result,
-        "provenance": prov,
-        "confidence": confidence,
-        "alerts": alerts,
-    }
-    validate_output_contract(output)
-    return output
-
-# Export wrapper as the official handler
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    return handle_l4(payload)

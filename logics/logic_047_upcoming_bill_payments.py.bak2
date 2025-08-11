@@ -128,7 +128,7 @@ def _days_between(d1: str, d2: str) -> int:
         return 0
 
 
-def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     org_id = payload.get("org_id")
     start_date = payload.get("start_date")
     end_date = payload.get("end_date")
@@ -228,26 +228,14 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         validations_failed=validations_failed,
     )
 
-    # Convert string alerts to dict format for schema compliance
-    raw_alerts = alerts_pack.get("alerts", []) if isinstance(alerts_pack, dict) else []
-    alerts = []
-    for alert in raw_alerts:
-        if isinstance(alert, str):
-            alerts.append({"msg": alert, "level": "info"})
-        elif isinstance(alert, dict):
-            alerts.append(alert)
-        else:
-            alerts.append({"msg": str(alert), "level": "info"})
-    
     output = {
         "result": result,
         "provenance": prov,
         "confidence": confidence,
-        "alerts": alerts,
+        "alerts": (alerts_pack.get("alerts", []) if isinstance(alerts_pack, dict) else []),
     }
     validate_output_contract(output)
     return output
 
 # Export wrapper as the official handler
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    return handle_l4(payload)
+handle = handle_l4
