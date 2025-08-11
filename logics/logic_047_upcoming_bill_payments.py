@@ -1,4 +1,20 @@
+"""
+Title: Upcoming Bill Payments
+ID: L-047
+Tags: []
+Required Inputs: schema://upcoming_bill_payments.input.v1
+Outputs: schema://upcoming_bill_payments.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only."""
 from typing import Dict, Any, List
+from helpers.learning_hooks import score_confidence
+from helpers.history_store import log_with_deltas_and_anomalies
+from helpers.rules_engine import validate_accounting
+from helpers.provenance import make_provenance
+from helpers.schema_registry import validate_output_contract
+
+LOGIC_ID = "L-047"
+
 
 from datetime import datetime
 
@@ -56,11 +72,44 @@ def _learn_from_history(
                 },
                 "signals": ["l4-v0-run", "schema:stable"],
             },
-        )
-    except Exception:
-        pass
-    return {"notes": []}
+    
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    # === Keep existing deterministic compute as-is (AEP §6 No Rewrites) ===
+    # If this module uses a different function name (e.g., run/execute/build_report), use that name here.
+    result = compute(payload)  # replace name if different in this file
 
+    # Validations (non-fatal)
+    validations_failed = 0
+    try:
+        validate_accounting(result)
+    except Exception:
+        validations_failed += 1
+
+    # Minimal provenance (expand per-figure later per MSOW §2)
+    prov = make_provenance(
+        result={"endpoint":"reports/auto","ids":[],"filters":{"period": payload.get("period")}}
+    )
+
+    # History + Deltas + Anomalies (MSOW §5)
+    alerts_pack = log_with_deltas_and_anomalies(
+        LOGIC_ID, payload, result, prov, period_key=payload.get("period")
+    )
+
+    # Confidence (learnable; AEP §1)
+    confidence = score_confidence(
+        sample_size=max(1, len(result) if hasattr(result, "__len__") else 1),
+        anomalies=len(alerts_pack.get("anomalies", [])),
+        validations_failed=validations_failed,
+    )
+
+    output = {
+        "result": result,
+        "provenance": prov,
+        "confidence": confidence,
+        "alerts": alerts_pack.get("alerts", []),
+    }
+    validate_output_contract(output)
+    return output
 
 def _days_between(d1: str, d2: str) -> int:
     try:

@@ -1,3 +1,12 @@
+"""
+Title: Partner Withdrawals
+ID: L-005
+Tags: []
+Required Inputs: schema://partner_withdrawals.input.v1
+Outputs: schema://partner_withdrawals.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:  # noqa: F401

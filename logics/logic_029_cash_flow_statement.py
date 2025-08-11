@@ -1,3 +1,12 @@
+"""
+Title: Cash Flow Statement
+ID: L-029
+Tags: []
+Required Inputs: schema://cash_flow_statement.input.v1
+Outputs: schema://cash_flow_statement.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies

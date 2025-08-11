@@ -1,3 +1,12 @@
+"""
+Title: Trial Balance
+ID: L-003
+Tags: []
+Required Inputs: schema://trial_balance.input.v1
+Outputs: schema://trial_balance.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:  # noqa: F401

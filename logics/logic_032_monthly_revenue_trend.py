@@ -1,3 +1,12 @@
+"""
+Title: Monthly Revenue Trend
+ID: L-032
+Tags: []
+Required Inputs: schema://monthly_revenue_trend.input.v1
+Outputs: schema://monthly_revenue_trend.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies

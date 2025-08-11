@@ -1,3 +1,12 @@
+"""
+Title: Balance Sheet
+ID: L-002
+Tags: []
+Required Inputs: schema://balance_sheet.input.v1
+Outputs: schema://balance_sheet.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:  # noqa: F401

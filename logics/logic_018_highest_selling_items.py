@@ -1,3 +1,12 @@
+"""
+Title: Highest Selling Items
+ID: L-018
+Tags: []
+Required Inputs: schema://highest_selling_items.input.v1
+Outputs: schema://highest_selling_items.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies

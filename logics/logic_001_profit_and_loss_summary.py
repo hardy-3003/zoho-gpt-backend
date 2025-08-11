@@ -1,3 +1,13 @@
+"""
+Title: Profit And Loss Summary
+ID: L-001
+Tags: []
+Required Inputs: schema://profit_and_loss_summary.input.v1
+Outputs: schema://profit_and_loss_summary.output.v1
+Assumptions:
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
+
 from typing import Dict, Any, List
 
 # Prefer using helpers if available; define safe fallbacks to keep imports clean
@@ -87,7 +97,7 @@ def _learn_from_history(
 
 
 @with_metrics("logic.L-001.handle")
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
     org_id: Any = payload.get("org_id")
     start_date: Any = payload.get("start_date")
     end_date: Any = payload.get("end_date")

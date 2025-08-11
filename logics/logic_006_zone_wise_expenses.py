@@ -1,3 +1,12 @@
+"""
+Title: Zone Wise Expenses
+ID: L-006
+Tags: []
+Required Inputs: schema://zone_wise_expenses.input.v1
+Outputs: schema://zone_wise_expenses.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:  # noqa: F401

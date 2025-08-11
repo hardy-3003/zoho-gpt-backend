@@ -1,3 +1,12 @@
+"""
+Title: Stock Movement Report
+ID: L-028
+Tags: []
+Required Inputs: schema://stock_movement_report.input.v1
+Outputs: schema://stock_movement_report.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies

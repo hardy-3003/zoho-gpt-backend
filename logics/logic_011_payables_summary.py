@@ -1,3 +1,12 @@
+"""
+Title: Payables Summary
+ID: L-011
+Tags: []
+Required Inputs: schema://payables_summary.input.v1
+Outputs: schema://payables_summary.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies

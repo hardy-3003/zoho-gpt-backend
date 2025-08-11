@@ -1,3 +1,12 @@
+"""
+Title: Monthly Expense Trend
+ID: L-033
+Tags: []
+Required Inputs: schema://monthly_expense_trend.input.v1
+Outputs: schema://monthly_expense_trend.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies

@@ -1,3 +1,12 @@
+"""
+Title: Tax Summary Report
+ID: L-039
+Tags: []
+Required Inputs: schema://tax_summary_report.input.v1
+Outputs: schema://tax_summary_report.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 from helpers.provenance import make_provenance
 from helpers.history_store import log_with_deltas_and_anomalies

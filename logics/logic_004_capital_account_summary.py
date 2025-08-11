@@ -1,3 +1,12 @@
+"""
+Title: Capital Account Summary
+ID: L-004
+Tags: []
+Required Inputs: schema://capital_account_summary.input.v1
+Outputs: schema://capital_account_summary.output.v1
+Assumptions: 
+Evolution Notes: L4 wrapper (provenance, history, confidence); additive only.
+"""
 from typing import Dict, Any, List
 
 try:  # noqa: F401
