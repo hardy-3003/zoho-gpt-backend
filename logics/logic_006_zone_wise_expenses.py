@@ -103,7 +103,7 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
         conf -= 0.10
     conf = max(0.1, min(0.95, conf))
 
-    return {
+    out = {
         "result": result,
         "provenance": {"sources": sources},
         "confidence": conf,
@@ -115,3 +115,45 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
             "notes": learn.get("notes", []),
         },
     }
+
+    try:
+        from helpers.provenance import make_provenance
+        from helpers.history_store import log_with_deltas_and_anomalies
+        from helpers.learning_hooks import score_confidence as _score
+
+        prov = out.get("provenance") or {}
+        prov.setdefault("sources", prov.get("sources", []))
+        prov.setdefault("figures", {})
+        prov["figures"].update(
+            make_provenance(
+                zones={
+                    "endpoint": "reports/expenses",
+                    "filters": {
+                        "group_by": "zone",
+                        "period": {"start": start_date, "end": end_date},
+                    },
+                }
+            )
+        )
+        out["provenance"] = prov
+
+        pack = log_with_deltas_and_anomalies(
+            "L-006", payload, out.get("result") or {}, prov
+        )
+        extra_alerts = pack.get("alerts", [])
+        if extra_alerts:
+            out["alerts"] = list(out.get("alerts", [])) + extra_alerts
+
+        new_conf = _score(
+            sample_size=max(1, len((out.get("result") or {}).get("zones", []) or [])),
+            anomalies=len(pack.get("anomalies", []) or []),
+            validations_failed=1 if "validation error" in out.get("alerts", []) else 0,
+        )
+        try:
+            out["confidence"] = max(float(out.get("confidence", 0.0)), float(new_conf))
+        except Exception:
+            out["confidence"] = float(new_conf)
+    except Exception:
+        pass
+
+    return out

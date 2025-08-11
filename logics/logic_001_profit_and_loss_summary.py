@@ -128,13 +128,19 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
             "notes": learn.get("notes", []),
         },
     }
+
+
 # ---- L4 wrapper glue (safe, additive) ----------------------------------------
 try:
     from helpers.logic_contract import l4_compliant
 except Exception:  # fallback if import fails
+
     def l4_compliant(*_a, **_k):
-        def _wrap(f): return f
+        def _wrap(f):
+            return f
+
         return _wrap
+
 
 # Resolve the underlying implementation once, in this order
 _handle_impl = None
@@ -142,6 +148,7 @@ for _name in ("handle_impl", "handle_core", "handle"):
     if _name in globals() and callable(globals()[_name]):
         _handle_impl = globals()[_name]
         break
+
 
 @l4_compliant(validate=True, logic_id="L-001")
 def handle(payload):
@@ -151,8 +158,76 @@ def handle(payload):
             "result": None,
             "provenance": {"source": "internal", "path": None},
             "confidence": 0.2,
-            "alerts": [{"level": "error", "message": "No underlying handle implementation found"}],
-            "meta": {"logic": "L-001"}
+            "alerts": [
+                {
+                    "level": "error",
+                    "message": "No underlying handle implementation found",
+                }
+            ],
+            "meta": {"logic": "L-001"},
         }
-    return _handle_impl(payload)
+    out = _handle_impl(payload)
+    try:
+        # Standardize provenance per-key and log deltas/anomalies
+        from helpers.provenance import make_provenance
+        from helpers.history_store import log_with_deltas_and_anomalies
+        from helpers.learning_hooks import score_confidence as _score
+
+        prov = out.get("provenance") or {}
+        prov.setdefault("sources", prov.get("sources", []))
+        prov.setdefault("figures", {})
+        totals = ((out or {}).get("result") or {}).get("totals", {})
+        period = {
+            "start": payload.get("start_date"),
+            "end": payload.get("end_date"),
+        }
+        figure_map = {}
+        if "income_total" in totals:
+            figure_map["income_total"] = {
+                "endpoint": "reports/pnl",
+                "filters": {"section": "income", "period": period},
+            }
+        if "expense_total" in totals:
+            figure_map["expense_total"] = {
+                "endpoint": "reports/pnl",
+                "filters": {"section": "expense", "period": period},
+            }
+        if "profit" in totals:
+            figure_map["profit"] = {
+                "endpoint": "reports/pnl",
+                "filters": {"section": "summary", "period": period},
+            }
+        prov["figures"].update(make_provenance(**figure_map))
+        out["provenance"] = prov
+
+        pack = log_with_deltas_and_anomalies(
+            "L-001", payload, out.get("result") or {}, prov
+        )
+        extra_alerts = pack.get("alerts", [])
+        if extra_alerts:
+            out["alerts"] = list(out.get("alerts", [])) + extra_alerts
+
+        validations_failed = (
+            1
+            if any(
+                isinstance(a, str) and "unbalanced" in a.lower()
+                for a in out.get("alerts", [])
+            )
+            else 0
+        )
+        new_conf = _score(
+            sample_size=int(payload.get("sample_size", 1) or 1),
+            anomalies=len(pack.get("anomalies", []) or []),
+            validations_failed=validations_failed,
+        )
+        try:
+            out["confidence"] = max(float(out.get("confidence", 0.0)), float(new_conf))
+        except Exception:
+            out["confidence"] = float(new_conf)
+    except Exception:
+        # Non-fatal; keep original output
+        pass
+    return out
+
+
 # ------------------------------------------------------------------------------

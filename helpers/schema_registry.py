@@ -57,3 +57,26 @@ def ensure_all_logic_defaults(ids: list[str]) -> None:
     for lid in ids:
         _INPUT_SCHEMAS.setdefault(lid, _BASE_INPUT)
         _OUTPUT_SCHEMAS.setdefault(lid, _BASE_OUTPUT)
+
+
+# --- Additive contract validation helpers ---
+def validate_output_contract(payload: Dict[str, Any]) -> None:
+    required = {
+        "provenance": dict,
+        "confidence": (int, float),
+    }
+    for field, typ in required.items():
+        if field not in payload:
+            raise ValueError(f"Missing required output field: {field}")
+        if not isinstance(payload[field], typ):
+            raise TypeError(
+                f"Field `{field}` must be {typ}, got {type(payload[field])}"
+            )
+
+
+def register_schema(
+    logic_id: str, input_schema_ref: str, output_schema_ref: str
+) -> None:
+    # Placeholder for future external registry integration
+    if not logic_id:
+        return
