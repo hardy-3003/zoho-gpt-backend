@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any, Dict, List, Tuple, Callable
 
 from core.operate_base import OperateInput, OperateOutput
@@ -91,9 +92,16 @@ class NodeSpec:
 
 
 def _import_handle(path: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
-    mod_name = path
-    m = __import__(mod_name, fromlist=["handle"])
-    return getattr(m, "handle")
+    try:
+        mod_name = path
+        m = __import__(mod_name, fromlist=["handle"])
+        return getattr(m, "handle")
+    except (ModuleNotFoundError, ImportError, AttributeError) as e:
+        # Return a degraded handler that always fails
+        def degraded_handler(payload: Dict[str, Any]) -> Dict[str, Any]:
+            raise RuntimeError(f"Module {path} not found: {e}")
+
+        return degraded_handler
 
 
 def run_dag(
@@ -115,13 +123,17 @@ def run_dag(
 
     ready: List[str] = [n.id for n in nodes if indeg.get(n.id, 0) == 0]
     node_map: Dict[str, NodeSpec] = {n.id: n for n in nodes}
-    out: Dict[str, Any] = {}
+    results: Dict[str, Any] = {}
+    execution_order: List[str] = []
 
     while ready:
         nid = ready.pop(0)
         n = node_map[nid]
+        execution_order.append(nid)
+
         if progress_cb:
             progress_cb({"stage": "start", "node": nid})
+
         handle = _import_handle(n.import_path)
 
         attempt = 0
@@ -151,7 +163,7 @@ def run_dag(
                 "reason": "retries_exhausted",
             }
 
-        out[nid] = result  # type: ignore[arg-type]
+        results[nid] = result  # type: ignore[arg-type]
 
         if progress_cb:
             progress_cb(
@@ -169,4 +181,10 @@ def run_dag(
                 if indeg[b] == 0 and b in node_map:
                     ready.append(b)
 
-    return out
+    # Return the expected format for tests
+    return {
+        "nodes": [n.id for n in nodes],
+        "edges": edges,
+        "execution_order": execution_order,
+        "results": results,
+    }

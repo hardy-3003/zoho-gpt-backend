@@ -13,8 +13,19 @@ def test_dag_topology_and_degradation(monkeypatch):
     ]
     edges = [("L-014", "L-020")]
     out = run_dag(nodes, edges, {"period": "2025-06"}, progress_cb=None)
-    assert "L-014" in out and "L-020" in out
-    for v in out.values():
+
+    # Verify the new DAG response format
+    assert "nodes" in out
+    assert "edges" in out
+    assert "execution_order" in out
+    assert "results" in out
+
+    # Verify both nodes are in results
+    assert "L-014" in out["results"]
+    assert "L-020" in out["results"]
+
+    # Verify contract shape for each result
+    for v in out["results"].values():
         assert isinstance(v, dict)
         for k in ("result", "provenance", "confidence", "alerts"):
             assert k in v

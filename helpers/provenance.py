@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 REQUIRED_KEYS = ("source", "endpoint", "ids", "filters")
@@ -15,15 +15,34 @@ def _normalize_entry(v: Any) -> Dict[str, Any]:
     return v
 
 
-def make_provenance(**fields: Dict[str, Any]) -> Dict[str, Any]:
+def make_field_provenance(**fields: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Normalized provenance map:
+    Legacy field-based provenance map for backward compatibility:
     { "field_name": {"source":"zoho", "endpoint":"<api>", "ids":[], "filters":{}} }
     """
     prov: Dict[str, Any] = {}
     for key, value in fields.items():
         prov[key] = _normalize_entry(value)
     return prov
+
+
+def make_provenance(**fields: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalized provenance map:
+    { "sources": [{"source":"zoho", "endpoint":"<api>", "ids":[], "filters":{}}] }
+    """
+    sources: List[Dict[str, Any]] = []
+    for key, value in fields.items():
+        normalized = _normalize_entry(value)
+        sources.append(normalized)
+
+    # If no fields provided, return default structure
+    if not sources:
+        sources = [
+            {"source": "zoho", "endpoint": "reports/auto", "ids": [], "filters": {}}
+        ]
+
+    return {"sources": sources}
 
 
 def validate_provenance(prov: Dict[str, Any]) -> None:

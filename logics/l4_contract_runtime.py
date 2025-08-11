@@ -7,13 +7,22 @@ def make_provenance(
 ) -> Dict[str, Any]:
     # Create a provenance structure that matches the validation requirements
     result_data = result or {}
+    sources_data = sources or []
+
+    # If sources are provided, use them directly
+    if sources_data:
+        return {"sources": sources_data}
+
+    # Otherwise, convert result data to sources format
     return {
-        "result": {
-            "source": "zoho",
-            "endpoint": result_data.get("endpoint", "reports/auto"),
-            "ids": result_data.get("ids", []),
-            "filters": result_data.get("filters", {}),
-        }
+        "sources": [
+            {
+                "source": "zoho",
+                "endpoint": result_data.get("endpoint", "reports/auto"),
+                "ids": result_data.get("ids", []),
+                "filters": result_data.get("filters", {}),
+            }
+        ]
     }
 
 

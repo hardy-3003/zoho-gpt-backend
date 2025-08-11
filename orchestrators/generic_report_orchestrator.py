@@ -7,7 +7,7 @@ from core.registry import route
 
 from helpers.pdf_extractor import extract_fields
 from helpers.schema_registry import save_learned_format, validate_output_contract
-from helpers.provenance import make_provenance
+from helpers.provenance import make_field_provenance
 from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.learning_hooks import score_confidence
 from helpers.reconciliation import reconcile_totals
@@ -85,7 +85,7 @@ def generate_from_learned(
             "filters": hint.get("filters", {}),
             "source": "zoho",
         }
-    provenance = make_provenance(**prov_map)
+    provenance = make_field_provenance(**prov_map)
     alerts_pack = log_with_deltas_and_anomalies(
         "L-RL-001", payload, result, provenance, period_key=payload.get("period")
     )
