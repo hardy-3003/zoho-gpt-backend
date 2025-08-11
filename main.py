@@ -134,6 +134,27 @@ async def mcp_fetch(request: Request, authorization: str = Header(None)):
         return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
     try:
+        body = await request.json()
+        # Direct logic execution override: accept {logic_id, payload}
+        if isinstance(body, dict) and body.get("logic_id"):
+            from core.logic_loader import LOGIC_REGISTRY as _LR, load_all_logics as _LL
+
+            _LL()
+            lid = body.get("logic_id")
+            entry = _LR.get(lid)
+            if not entry:
+                return JSONResponse(
+                    status_code=404, content={"error": f"logic '{lid}' not found"}
+                )
+            handler, _meta = entry
+            payload = body.get("payload") or {}
+            try:
+                out = handler(payload)
+                # Return contract directly for smoke tests
+                return out
+            except Exception as e:
+                return JSONResponse(status_code=500, content={"error": str(e)})
+
         query = last_query.get("text", "").lower()
         if not query:
             return {"error": "Missing query"}
