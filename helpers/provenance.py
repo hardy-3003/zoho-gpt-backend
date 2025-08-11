@@ -32,10 +32,13 @@ def validate_provenance(prov: Dict[str, Any]) -> None:
     # Support composite provenance with 'figures' and 'sources'
     entries = prov.get("figures") if isinstance(prov.get("figures"), dict) else prov
     for field, entry in entries.items():
+        # Skip audit_trail entries which have a different structure
+        if field == "audit_trail":
+            continue
+        # ignore non-dict top-level keys like 'sources'
+        if field == "sources":
+            continue
         if not isinstance(entry, dict):
-            # ignore non-dict top-level keys like 'sources'
-            if field == "sources":
-                continue
             raise TypeError(f"provenance[{field}] must be a dict")
         for rk in REQUIRED_KEYS:
             if rk not in entry:

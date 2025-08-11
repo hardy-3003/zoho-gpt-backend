@@ -1,51 +1,59 @@
 #!/usr/bin/env python3
 """
-Script to fix syntax errors in logic files caused by meta field addition.
+Fix widespread syntax errors in logic files.
+The issue is malformed "return {}try:" lines that should be proper try-except blocks.
 """
 
 import os
 import re
-import glob
+from pathlib import Path
 
 
-def fix_syntax_errors_in_file(filepath):
-    """Fix syntax errors in a single file."""
-    with open(filepath, "r") as f:
-        content = f.read()
+def fix_syntax_error_in_file(file_path: str) -> bool:
+    """Fix syntax error in a single logic file."""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
 
-    # Fix the malformed output dictionary pattern
-    pattern = r'(\s+output = \{\s*\n(?:\s+"[^"]+": [^,\n]+,\n)*\s*,\s*\n\s+"meta": LOGIC_META,\s*\n\s*\})'
+        # Check if file has the syntax error
+        if "return {}try:" not in content:
+            return False
 
-    match = re.search(pattern, content, re.MULTILINE)
-    if match:
-        old_output = match.group(1)
-        # Remove the extra comma and fix formatting
-        new_output = re.sub(r',\s*\n\s*"meta":', ',\n        "meta":', old_output)
-        new_output = re.sub(r',\s*\n\s*"meta":', ',\n        "meta":', new_output)
+        # Fix the malformed line
+        # Pattern: "return {}try:" should be replaced with proper try-except structure
+        fixed_content = re.sub(r"return \{\}try:", "try:", content)
 
-        # Replace in content
-        new_content = content.replace(old_output, new_output)
+        # Write back the fixed content
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(fixed_content)
 
-        # Write back to file
-        with open(filepath, "w") as f:
-            f.write(new_content)
-
+        print(f"Fixed: {file_path}")
         return True
 
-    return False
+    except Exception as e:
+        print(f"Error fixing {file_path}: {e}")
+        return False
 
 
 def main():
-    """Main function to fix syntax errors in all logic files."""
-    logic_files = glob.glob("logics/logic_*.py")
+    """Fix syntax errors in all logic files."""
+    logics_dir = Path("logics")
+    if not logics_dir.exists():
+        print("logics directory not found")
+        return
 
     fixed_count = 0
-    for filepath in logic_files:
-        if fix_syntax_errors_in_file(filepath):
-            print(f"Fixed syntax: {filepath}")
+    total_files = 0
+
+    for logic_file in logics_dir.glob("logic_*.py"):
+        total_files += 1
+        if fix_syntax_error_in_file(str(logic_file)):
             fixed_count += 1
 
-    print(f"\nTotal files fixed: {fixed_count}")
+    print(f"\nSummary:")
+    print(f"Total logic files checked: {total_files}")
+    print(f"Files fixed: {fixed_count}")
+    print(f"Files with no issues: {total_files - fixed_count}")
 
 
 if __name__ == "__main__":
