@@ -17,7 +17,7 @@ from helpers.schema_registry import validate_output_contract
 
 from typing import Dict, Any, List
 from typing import Any, Dict
-LOGIC_ID = "L-XXX"
+LOGIC_ID = "L-072"
 
 try:
     from helpers.zoho_client import get_json
