@@ -1369,3 +1369,16 @@
 {"ts": 1755166972.542926, "name": "execution_engine.execute_dag", "duration_s": 0.001054, "status": "ok", "alerts": null}
 {"ts": 1755166972.5445309, "name": "execution_engine.execute_dag", "duration_s": 0.000683, "status": "ok", "alerts": null}
 {"ts": 1755166972.5458791, "name": "execution_engine.execute_dag", "duration_s": 0.000568, "status": "ok", "alerts": null}
+{"ts": 1755173230.85983, "name": "execution_engine.execute_dag", "duration_s": 6.019209, "status": "ok", "alerts": null}
+{"ts": 1755173239.303083, "name": "orchestrator.rl.learn_from_pdf", "duration_s": 0.002079, "status": "ok", "alerts": null}
+{"ts": 1755173287.1417, "name": "orchestrator.rl.learn_from_pdf", "duration_s": 0.001428, "status": "ok", "alerts": null}
+{"ts": 1755173390.794261, "name": "orchestrator.rl.learn_from_pdf", "duration_s": 0.001406, "status": "ok", "alerts": null}
+{"ts": 1755173420.729534, "name": "execution_engine.execute_dag", "duration_s": 6.017185, "status": "ok", "alerts": null}
+{"ts": 1755173420.7395892, "name": "orchestrator.rl.learn_from_pdf", "duration_s": 0.003435, "status": "ok", "alerts": null}
+{"ts": 1755173434.3348129, "name": "execution_engine.execute_dag", "duration_s": 6.022726, "status": "ok", "alerts": null}
+{"ts": 1755173434.336618, "name": "logic.L-001.handle", "duration_s": 0.000267, "status": "ok", "alerts": 1}
+{"ts": 1755173434.3470268, "name": "logic.L-001.handle", "duration_s": 0.000226, "status": "ok", "alerts": 1}
+{"ts": 1755173434.353866, "name": "logic.L-001.handle", "duration_s": 0.000202, "status": "ok", "alerts": 1}
+{"ts": 1755173434.360439, "name": "logic.L-001.handle", "duration_s": 0.000228, "status": "ok", "alerts": 1}
+{"ts": 1755173434.365209, "name": "logic.L-001.handle", "duration_s": 0.000154, "status": "ok", "alerts": 1}
+{"ts": 1755173434.3760698, "name": "orchestrator.rl.learn_from_pdf", "duration_s": 0.002193, "status": "ok", "alerts": null}

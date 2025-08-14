@@ -1,0 +1,60 @@
+{
+  "Revenue": {
+    "field_name": "Revenue",
+    "endpoint": "reports/pnl",
+    "filters": {
+      "section": "income"
+    },
+    "path": [],
+    "confidence": 0.8,
+    "source": "heuristic",
+    "last_used": "2025-08-14T17:40:34.373983",
+    "usage_count": 4
+  },
+  "Expenses": {
+    "field_name": "Expenses",
+    "endpoint": "reports/pnl",
+    "filters": {
+      "section": "expense"
+    },
+    "path": [],
+    "confidence": 0.8,
+    "source": "heuristic",
+    "last_used": "2025-08-14T17:40:34.374159",
+    "usage_count": 4
+  },
+  "Period": {
+    "field_name": "Period",
+    "endpoint": "common/period",
+    "filters": {},
+    "path": [],
+    "confidence": 0.7,
+    "source": "heuristic",
+    "last_used": "2025-08-14T17:40:34.374292",
+    "usage_count": 4
+  },
+  "pnl_Revenue": {
+    "field_name": "pnl_Revenue",
+    "endpoint": "reports/pnl",
+    "filters": {
+      "section": "income"
+    },
+    "path": [],
+    "confidence": 0.8,
+    "source": "heuristic",
+    "last_used": "2025-08-14T17:40:34.374421",
+    "usage_count": 4
+  },
+  "pnl_Expenses": {
+    "field_name": "pnl_Expenses",
+    "endpoint": "reports/pnl",
+    "filters": {
+      "section": "expense"
+    },
+    "path": [],
+    "confidence": 0.8,
+    "source": "heuristic",
+    "last_used": "2025-08-14T17:40:34.374696",
+    "usage_count": 4
+  }
+}

@@ -146,7 +146,7 @@ def _run_mis_with_dag(
             # Fallback to logic handlers
             candidates = _find_logic_by_token(sec)
             if candidates:
-                for lid, (handler, meta) in candidates:
+                for lid, meta in candidates:
                     node_id = f"logic_{lid}"
                     node = NodeSpec(
                         id=node_id,
@@ -256,12 +256,22 @@ def _find_fallback_logic(section: str, tags: List[str]) -> Optional[str]:
 
 class NodeSpec:
     def __init__(
-        self, id: str, import_path: str, retries: int = 1, backoff_s: float = 0.5
+        self,
+        id: str,
+        import_path: str,
+        retries: int = 1,
+        backoff_s: float = 0.5,
+        tags: List[str] = None,
+        required: bool = True,
+        fallback_logic: Optional[str] = None,
     ):
         self.id = id
         self.import_path = import_path
         self.retries = max(0, int(retries))
         self.backoff_s = float(backoff_s)
+        self.tags = tags or []
+        self.required = required
+        self.fallback_logic = fallback_logic
 
 
 def _import_handle(path: str) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
