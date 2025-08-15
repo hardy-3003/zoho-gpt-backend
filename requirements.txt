@@ -1,7 +1,0 @@
-fastapi
-uvicorn
-requests
-python-dotenv
-pytest
-httpx
-psutil
