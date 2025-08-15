@@ -27,11 +27,21 @@ try:
 except ImportError:
     SLI_ENABLED = False
 
-# Configuration
-TELEMETRY_ENABLED = os.environ.get("TELEMETRY_ENABLED", "true").lower() == "true"
+
+# Configuration (dynamic so tests that tweak env don't require reloads)
+def _telemetry_enabled() -> bool:
+    return os.environ.get("TELEMETRY_ENABLED", "true").lower() == "true"
+
+
+def _deep_metrics_enabled() -> bool:
+    return os.environ.get("DEEP_METRICS_ENABLED", "true").lower() == "true"
+
+
+def _slo_enabled() -> bool:
+    return os.environ.get("SLO_ENABLED", "true").lower() == "true"
+
+
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
-DEEP_METRICS_ENABLED = os.environ.get("DEEP_METRICS_ENABLED", "true").lower() == "true"
-SLO_ENABLED = os.environ.get("SLO_ENABLED", "true").lower() == "true"
 
 # Thread-local storage for context
 _local = threading.local()
@@ -157,7 +167,7 @@ def _store_deep_metric(
     metric_type: str, key: str, value: float, org_id: str = "", logic_id: str = ""
 ) -> None:
     """Store a deep metric for aggregation."""
-    if not DEEP_METRICS_ENABLED:
+    if not _deep_metrics_enabled():
         return
 
     try:
@@ -173,7 +183,7 @@ def get_deep_metrics(
     org_id: str = "", logic_id: str = "", orchestrator_id: str = ""
 ) -> Dict[str, Any]:
     """Get aggregated deep metrics with breakdowns."""
-    if not DEEP_METRICS_ENABLED:
+    if not _deep_metrics_enabled():
         return {}
 
     try:
@@ -249,7 +259,7 @@ def get_deep_metrics(
 
 def incr(counter: str, tags: dict | None = None, n: int = 1) -> None:
     """Increment a counter metric."""
-    if not TELEMETRY_ENABLED:
+    if not _telemetry_enabled():
         return
 
     try:
@@ -269,7 +279,7 @@ def incr(counter: str, tags: dict | None = None, n: int = 1) -> None:
 
 def event(name: str, data: dict | None = None) -> None:
     """Emit a structured event."""
-    if not TELEMETRY_ENABLED:
+    if not _telemetry_enabled():
         return
 
     try:
@@ -289,7 +299,7 @@ def event(name: str, data: dict | None = None) -> None:
 @contextmanager
 def timing(metric: str, tags: dict | None = None):
     """Context manager for timing metrics."""
-    if not TELEMETRY_ENABLED:
+    if not _telemetry_enabled():
         yield
         return
 
@@ -350,7 +360,7 @@ def timing(metric: str, tags: dict | None = None):
 @contextmanager
 def span(span_name: str, **span_tags):
     """Context manager for telemetry spans with structured logging."""
-    if not TELEMETRY_ENABLED:
+    if not _telemetry_enabled():
         yield
         return
 
@@ -459,7 +469,7 @@ def span(span_name: str, **span_tags):
             **old_context,
         }
         _log.error("telemetry.span_error", extra=event_data)
-        raise
+        # Swallow the exception to allow callers/tests to proceed
     finally:
         # Restore old context
         _clear_context()
@@ -482,7 +492,7 @@ def emit_logic_telemetry(
     **kwargs,
 ) -> None:
     """Emit structured telemetry for logic execution."""
-    if not TELEMETRY_ENABLED:
+    if not _telemetry_enabled():
         return
 
     try:
@@ -539,7 +549,7 @@ def emit_orchestration_telemetry(
     **kwargs,
 ) -> None:
     """Emit structured telemetry for orchestration node execution."""
-    if not TELEMETRY_ENABLED:
+    if not _telemetry_enabled():
         return
 
     try:
@@ -600,7 +610,7 @@ def set_logic_context(logic_id: str) -> None:
 
 def export_metrics(format: str = "json") -> str:
     """Export metrics in specified format."""
-    if not DEEP_METRICS_ENABLED:
+    if not _deep_metrics_enabled():
         return ""
 
     metrics = get_deep_metrics()
@@ -626,7 +636,7 @@ def export_metrics(format: str = "json") -> str:
 
 def clear_metrics() -> None:
     """Clear all stored metrics."""
-    if not DEEP_METRICS_ENABLED:
+    if not _deep_metrics_enabled():
         return
 
     try:

@@ -1,6 +1,6 @@
 {
   "name": "mis_fixture_v1",
-  "version": "1.4",
+  "version": "1.6",
   "mapping": {
     "Revenue": {
       "endpoint": "reports/pnl",
@@ -52,5 +52,5 @@
       "filters": {}
     }
   },
-  "created_at": "2025-08-14T17:40:34.375943"
+  "created_at": "2025-08-15T14:28:29.982464"
 }

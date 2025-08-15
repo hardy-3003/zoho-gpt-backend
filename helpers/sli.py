@@ -18,7 +18,10 @@ from datetime import datetime, timedelta
 # Configuration from environment
 SLI_WINDOW_SEC = int(os.getenv("SLI_WINDOW_SEC", "604800"))  # 7 days default
 SLI_BUCKETS = int(os.getenv("SLI_BUCKETS", "60"))  # 60 buckets default
-SLI_ENABLED = os.getenv("SLO_ENABLED", "true").lower() == "true"
+
+
+def _sli_enabled() -> bool:
+    return os.getenv("SLO_ENABLED", "true").lower() == "true"
 
 
 @dataclass
@@ -53,9 +56,7 @@ class SLIStore:
 
         # Threadsafe storage
         self._lock = threading.RLock()
-        self._metrics: Dict[str, deque] = defaultdict(
-            lambda: deque(maxlen=bucket_count)
-        )
+        self._metrics: Dict[str, list] = defaultdict(list)
         self._current_bucket = 0
         self._last_cleanup = time.time()
 
@@ -65,7 +66,7 @@ class SLIStore:
 
     def record_sli(self, metric: str, value: float, dims: Dict[str, str]) -> None:
         """Record an SLI metric with value and dimensions."""
-        if not SLI_ENABLED:
+        if not _sli_enabled():
             return
 
         current_time = time.time()
@@ -79,16 +80,23 @@ class SLIStore:
                 value=value, timestamp=current_time, dimensions=dims, metric_name=metric
             )
 
-            # Store in current bucket
+            # Store metric
             self._metrics[metric].append(sli_metric)
 
     def _cleanup_old_buckets(self, current_time: float) -> None:
         """Remove metrics older than the window."""
         cutoff_time = current_time - self.window_sec
 
-        # Update bucket timestamps
-        if current_time - self._bucket_timestamps[-1] >= self.bucket_sec:
-            self._bucket_timestamps.append(current_time)
+        # Update bucket timestamps (guard against patched time.time in tests)
+        try:
+            last_ts = float(self._bucket_timestamps[-1])
+            now_ts = float(current_time)
+        except Exception:
+            last_ts = self._bucket_timestamps[-1]
+            now_ts = current_time
+
+        if now_ts - last_ts >= self.bucket_sec:
+            self._bucket_timestamps.append(now_ts)
 
         # Remove old bucket timestamps
         while self._bucket_timestamps and self._bucket_timestamps[0] < cutoff_time:
@@ -96,7 +104,7 @@ class SLIStore:
 
     def get_snapshot(self) -> SLISnapshot:
         """Get a snapshot of all current SLI metrics."""
-        if not SLI_ENABLED:
+        if not _sli_enabled():
             return SLISnapshot(
                 timestamp=time.time(),
                 metrics={},
@@ -112,12 +120,8 @@ class SLIStore:
 
             # Filter metrics within window
             filtered_metrics = {}
-            for metric_name, metrics_deque in self._metrics.items():
-                recent_metrics = [
-                    metric
-                    for metric in metrics_deque
-                    if metric.timestamp >= cutoff_time
-                ]
+            for metric_name, metrics_list in self._metrics.items():
+                recent_metrics = [m for m in metrics_list if m.timestamp >= cutoff_time]
                 if recent_metrics:
                     filtered_metrics[metric_name] = recent_metrics
 
@@ -194,8 +198,8 @@ class SLIStore:
         if not metrics:
             return 0.0
 
-        # Calculate rate over the window
-        return len(metrics) / self.window_sec
+        # Calculate rate over the configured window for stable expectations
+        return len(metrics) / float(self.window_sec)
 
     def get_count(self, metric: str, dims: Optional[Dict[str, str]] = None) -> int:
         """Get count of events for a specific metric and dimensions."""
@@ -248,7 +252,7 @@ class SLIStore:
 
     def export_prometheus(self) -> str:
         """Export metrics in Prometheus format."""
-        if not SLI_ENABLED:
+        if not _sli_enabled():
             return ""
 
         snapshot = self.get_snapshot()

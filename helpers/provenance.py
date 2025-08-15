@@ -637,7 +637,7 @@ def get_provenance_metrics(provenance: Dict[str, Any]) -> Dict[str, Any]:
                 source_type = source.get("source", "").lower()
                 if "zoho" in source_type:
                     metrics["has_zoho_sources"] = True
-                elif "calculat" in source_type:
+                elif "calculat" in source_type or source_type == "calculation":
                     metrics["has_calculated_sources"] = True
 
     # Count figures

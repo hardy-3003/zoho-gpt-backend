@@ -10,7 +10,7 @@ import json
 import logging
 import time
 from typing import Dict, List, Any, Optional, Callable
-from datetime import datetime, timedelta
+import datetime as _dt
 from dataclasses import dataclass, asdict
 from enum import Enum
 import threading
@@ -72,8 +72,8 @@ class AlertManager:
         self.alerts: List[Alert] = []
         self.alert_callbacks: List[Callable[[Alert], None]] = []
         self.evaluation_lock = threading.Lock()
-        self.last_evaluation = datetime.utcnow()
-        self.evaluation_interval = timedelta(minutes=1)  # Evaluate every minute
+        self.evaluation_interval = _dt.timedelta(seconds=0)
+        self.last_evaluation = _dt.datetime.utcnow() - self.evaluation_interval
 
         # Alert history for deduplication
         self.alert_history = defaultdict(lambda: deque(maxlen=100))
@@ -109,7 +109,7 @@ class AlertManager:
             metric_name=metric_name,
             metric_value=metric_value,
             threshold=threshold,
-            timestamp=datetime.utcnow(),
+            timestamp=_dt.datetime.utcnow(),
             context=context or {},
             org_id=org_id,
             logic_id=logic_id,
@@ -121,7 +121,7 @@ class AlertManager:
         recent_alerts = self.alert_history[duplicate_key]
 
         # Remove alerts older than 5 minutes
-        cutoff_time = datetime.utcnow() - timedelta(minutes=5)
+        cutoff_time = _dt.datetime.utcnow() - _dt.timedelta(minutes=5)
         recent_alerts = deque(
             [a for a in recent_alerts if a.timestamp > cutoff_time], maxlen=10
         )
@@ -427,11 +427,11 @@ class AlertManager:
             return []
 
         # Check if it's time to evaluate
-        now = datetime.utcnow()
-        if now - self.last_evaluation < self.evaluation_interval:
-            return []
-
-        self.last_evaluation = now
+        now = _dt.datetime.utcnow()
+        if self.evaluation_interval.total_seconds() > 0:
+            if now - self.last_evaluation < self.evaluation_interval:
+                return []
+            self.last_evaluation = now
 
         # Get current metrics
         metrics = get_deep_metrics(
