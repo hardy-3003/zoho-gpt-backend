@@ -7,9 +7,17 @@ import threading
 from typing import Any, Dict, Optional, List
 from datetime import datetime
 import uuid
-import psutil
 import statistics
 from collections import defaultdict, deque
+
+# Optional psutil import for environments where it's unavailable
+try:
+    import psutil  # type: ignore
+
+    _HAS_PSUTIL = True
+except Exception:  # ImportError or other env issues
+    psutil = None  # type: ignore
+    _HAS_PSUTIL = False
 
 # Import SLI collection
 try:
@@ -107,6 +115,9 @@ def _clear_context() -> None:
 
 def _get_system_metrics() -> Dict[str, float]:
     """Get current system metrics."""
+    if not _HAS_PSUTIL:
+        return {"cpu_percent": 0.0, "memory_mb": 0.0, "memory_percent": 0.0}
+
     try:
         process = psutil.Process()
         return {
