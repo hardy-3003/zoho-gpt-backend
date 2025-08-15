@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 from core.operate_base import OperateInput, OperateOutput
@@ -25,26 +27,126 @@ from helpers.reconciliation import (
     cross_field_consistency_check,
 )
 from helpers.obs import with_metrics
+from helpers.telemetry import (
+    span,
+    emit_orchestration_telemetry,
+    set_org_context,
+    set_run_context,
+    set_logic_context,
+    get_deep_metrics,
+)
+from helpers.alerts import evaluate_alerts, create_alert, AlertSeverity
+from helpers.anomaly_detector import detect_anomaly
 
 
 def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput:
-    records: Dict[str, Any] = {}
-    missing: List[str] = []
-    for kw in logic_keywords:
-        op = route(kw)
-        if op is None:
-            missing.append(kw)
-            continue
-        try:
-            out = op(input)
-            records[kw] = out.content
-        except Exception as e:
-            records[kw] = {"error": str(e)}
+    run_id = str(uuid.uuid4())
+
+    with span(
+        "generic_orchestration",
+        run_id=run_id,
+        org_id=input.org_id,
+        keywords_count=len(logic_keywords),
+    ):
+
+        # Set telemetry context
+        set_org_context(input.org_id)
+        set_run_context(run_id)
+
+        records: Dict[str, Any] = {}
+        missing: List[str] = []
+
+        for kw in logic_keywords:
+            dag_node_id = f"generic_{kw}"
+
+            with span(
+                "generic_keyword", run_id=run_id, dag_node_id=dag_node_id, keyword=kw
+            ):
+
+                op = route(kw)
+                if op is None:
+                    missing.append(kw)
+                    continue
+                try:
+                    start_time = time.perf_counter()
+                    out = op(input)
+                    duration_ms = (time.perf_counter() - start_time) * 1000.0
+                    records[kw] = out.content
+
+                    # Set logic context for telemetry
+                    set_logic_context(f"operate_{kw}")
+
+                    # Detect anomalies for this execution
+                    anomaly_result = detect_anomaly(
+                        f"operate_{kw}_latency",
+                        duration_ms,
+                        input.org_id,
+                        f"operate_{kw}",
+                        dag_node_id,
+                    )
+
+                    emit_orchestration_telemetry(
+                        run_id=run_id,
+                        dag_node_id=dag_node_id,
+                        logic_id=f"operate_{kw}",
+                        duration_ms=duration_ms,
+                        status="success",
+                        anomaly_score=(
+                            anomaly_result.overall_score
+                            if anomaly_result.is_anomaly
+                            else 0.0
+                        ),
+                    )
+                except Exception as e:
+                    duration_ms = (time.perf_counter() - start_time) * 1000.0
+                    records[kw] = {"error": str(e)}
+
+                    # Set logic context for telemetry
+                    set_logic_context(f"operate_{kw}")
+
+                    # Detect anomalies for this execution
+                    anomaly_result = detect_anomaly(
+                        f"operate_{kw}_latency",
+                        duration_ms,
+                        input.org_id,
+                        f"operate_{kw}",
+                        dag_node_id,
+                    )
+
+                    emit_orchestration_telemetry(
+                        run_id=run_id,
+                        dag_node_id=dag_node_id,
+                        logic_id=f"operate_{kw}",
+                        duration_ms=duration_ms,
+                        status="error",
+                        error_taxonomy=type(e).__name__,
+                        anomaly_score=(
+                            anomaly_result.overall_score
+                            if anomaly_result.is_anomaly
+                            else 0.0
+                        ),
+                    )
+
+    # Evaluate alerts after execution
+    alerts = evaluate_alerts(input.org_id, "", "generic_orchestrator")
+
+    # Add alert information to metadata
+    alert_info = {
+        "alert_count": len(alerts),
+        "critical_alerts": len(
+            [a for a in alerts if a.severity == AlertSeverity.CRITICAL]
+        ),
+        "warning_alerts": len(
+            [a for a in alerts if a.severity == AlertSeverity.WARNING]
+        ),
+    }
 
     meta = {
         "operator": "generic_orchestrator",
         "keywords": logic_keywords,
         "missing": missing,
+        "run_id": run_id,
+        "alerts": alert_info,
     }
     return OperateOutput(content={"sections": records}, meta=meta)
 

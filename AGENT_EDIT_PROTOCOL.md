@@ -1,144 +1,161 @@
-# Agent Edit Protocol (L4 – Autonomous, Closed-Loop Evolution)
+# Agent Edit Protocol (L4 – Autonomous, Closed-Loop Evolution) — V3
 
-This document defines the mandatory rules for all logic modules (.py) and integrations in the Zoho GPT Backend.  
-Every logic must adhere to **L4 — Autonomous, Closed-Loop Evolution** standards.
+This document defines **mandatory rules** for all logic modules (`.py`) and integrations in the Zoho GPT Backend.  
+Every logic must comply with **L4 — Autonomous, Closed-Loop Evolution** standards, ensuring the system becomes progressively more intelligent, self-auditing, and adaptable — capable of outperforming human Chartered Accountants in accounting accuracy, compliance, and data-driven insight generation.
 
 ---
 
-## 1. Self-Learning
-- Each logic must **improve over time** from:
-  - New inputs
-  - User corrections
-  - Usage patterns
-- Include **hooks/placeholders** for:
+## 1. Self-Learning (Continuous Improvement Loop)
+- Each logic must **continuously improve** from:
+  - New inputs and datasets
+  - User corrections or overrides
+  - Detected usage patterns
+- Include **learning hooks** for:
   - GPT-based evaluations
   - Pattern extraction
   - Confidence scoring
-  - Retry logic
-- Self-learning code should use `/helpers/learning_hooks.py` functions and store variations in the local strategy registry inside the logic file.
+  - Retry and fallback strategies
+- Implement hooks via `/helpers/learning_hooks.py` and store learned variations in a **local strategy registry** within the logic file.
+- Self-learning must adapt rules for:
+  - Accounting standards (IFRS, GAAP, local regulations)
+  - Taxation logic (GST, Income Tax, TDS, future rules)
+  - Audit heuristics
 
 ---
 
-## 2. History-Aware
-- Persist **changelogs** for:
+## 2. History-Aware (Change Intelligence)
+- Persist **detailed changelogs** for:
   - Invoices
   - Bills
   - Purchase Orders (POs)
   - Salaries
   - Items
   - Taxes
+  - Regulatory data (GST filings, ITD notices, TDS)
 - Track:
-  - Price changes
-  - Periodic deltas
-  - Vendor and cross-organization deviations
-- Enable **anomaly flags** for manipulation detection and inconsistent trends.
-- All history logs must be stored via `/helpers/history_store.py`.
+  - Price changes over time
+  - Vendor and client deviations
+  - Cross-organization differences
+  - Period-over-period deltas
+- **Anomaly flags** must be triggered for:
+  - Potential fraud
+  - Data manipulation
+  - Inconsistent trends
+- All history logs must be stored in `/helpers/history_store.py` and be queryable by other modules.
 
 ---
 
 ## 3. Reverse-Learning from Custom Inputs
-- When encountering **unfamiliar report formats** (e.g., new MIS PDFs):
-  1. Auto-extract fields using `/helpers/pdf_extractor.py`.
-  2. Map each figure to its Zoho origin using nomenclature maps in `/helpers/schema_registry.py`.
-  3. Learn and **store** the format in `/docs/learned_formats/`.
-  4. Generate it **autonomously next time**.
-- Log every new format learned in `/docs/CHANGELOG.md`.
+- On encountering **unfamiliar formats** (e.g., new MIS PDFs, GST JSON, ITD XML):
+  1. Extract fields via `/helpers/pdf_extractor.py` or equivalent data parser.
+  2. Map each field to its Zoho origin using `/helpers/schema_registry.py`.
+  3. Store the learned format in `/docs/learned_formats/`.
+  4. Autonomously reproduce the format next time.
+- Every learned format must be logged in `/docs/CHANGELOG.md` with an identifier.
 
 ---
 
 ## 4. Expandable in the Same File
-- Each logic must grow inside **its own `.py` file** in `/logics/`.
-- Use **internal subtrees/strategies** for expansion.
-- Create new files only for **shared utilities** in `/helpers/`.
+- Each logic must evolve **within its own `.py` file** inside `/logics/`.
+- Internal expansions should use **sub-strategies** or nested classes.
+- New files should be created **only for shared utilities** in `/helpers/`.
 
 ---
 
 ## 5. Smart Accounting Validation
-- Automatically check for accounting rule violations, including:
+- Automatically check for:
   - Unbalanced reversals
-  - Mismatched categories
+  - Category mismatches
   - Missing journals
   - Date anomalies
-- Use `/helpers/rules_engine.py` for these validations.
-- Suggest fixes where possible and append recommendations to output.
+  - Cross-checks with **Income Tax**, **GST**, **TDS** rules
+- Use `/helpers/rules_engine.py` for enforcement.
+- Append actionable **fix suggestions** to output.
 
 ---
 
-## 6. No Rewrites
-- All improvements are **additive** — no starting from scratch.
-- Migrations/adapters must **preserve old behavior** while extending capabilities.
-- Store migration notes in `/docs/CHANGELOG.md`.
+## 6. No Rewrites (Evolution > Replacement)
+- All improvements must be **additive** — never discard functional history.
+- If a migration is necessary:
+  - Preserve old behavior via adapters.
+  - Document changes in `/docs/CHANGELOG.md`.
 
 ---
 
 ## 7. Many-to-One Orchestration
-- Orchestrator modules in `/orchestrators/` can **combine 2 → ∞ logics** for composite outputs.
-- Support:
+- Orchestrator modules in `/orchestrators/` may **combine 2 → ∞ logics** for:
+  - Composite reports
+  - Multi-source validation
+  - Cross-checking audits
+- Must support:
   - Configurable pipelines
   - Partial retries
-  - Graceful degradation
+  - Graceful degradation on failures
 
 ---
 
 ## 8. Auto-Expansion
-- From repeated requests/patterns:
-  - Auto-create/extend **logic stubs** in `/logics/`.
-  - Register them in `/helpers/schema_registry.py`.
-  - Add automated tests in `/tests/unit/logic_xxx/` named `test_logic_xxx.py`.
-  - Add guardrails via `/helpers/rules_engine.py`.
+- Repeated patterns/requests must:
+  - Auto-create/extend logic stubs in `/logics/`
+  - Register in `/helpers/schema_registry.py`
+  - Add tests in `/tests/unit/logic_xxx/` (`test_logic_xxx.py`)
+  - Guardrail with `/helpers/rules_engine.py`
 
 ---
 
-## 9. Logic Category Awareness
+## 9. Logic Category Awareness (From MASTER_SCOPE_OF_WORK.md)
+- **Static**: Improve performance/clarity without changing functionality.
+- **Dynamic (Regulation)**:
+  - Watch `/config/regulations/` for GST/ITD/TDS updates.
+  - Version rules by **effective date**.
+- **Dynamic (Patterns)**:
+  - Refine anomaly heuristics over time.
+- **Dynamic (Growth)**:
+  - Expand coverage with new metrics/data sources.
+- **Dynamic (Behavior)**:
+  - Learn new formats and interaction styles.
 
-When the agent is performing edits or enhancements, it must use the **Logic Category Annotations** from `MASTER_SCOPE_OF_WORK.md` to decide the correct approach.
+---
 
-- **Static**:  
-  - Focus on performance improvements, code clarity, and bug fixes.  
-  - Avoid introducing functional changes unless approved.  
-  - Do not auto-expand unless specifically instructed.
+## 10. External Data Integration for Autonomous Auditing
+- Logic must be able to:
+  - Fetch data from Income Tax Department APIs/portals
+  - Fetch GST filing data from GSTN
+  - Integrate bank feeds, payment gateways, POS data
+  - Cross-check compliance automatically
+- Must operate in both:
+  - **MCP Mode** (direct GPT integration)
+  - **Non-MCP Mode** (standalone backend, APIs, CLI tools)
 
-- **Dynamic (Regulation)**:  
-  - Monitor relevant rule JSON files in `/config/regulations/` (GST, ITD, TDS).  
-  - Update logic immediately when regulations change.  
-  - Implement **effective-date versioning** by storing prior logic variations in `/helpers/history_store.py` and applying only when the transaction date falls in the effective range.
+---
 
-- **Dynamic (Patterns)**:  
-  - Continuously refine anomaly heuristics and thresholds using `/helpers/history_store.py`.  
-  - Add new detection strategies without breaking existing ones.
+## 11. Self-Observation & Full Data Retention
+- Monitor **every transaction, metric, and anomaly**.
+- Keep **historical baselines** for all data types.
+- Compare **past vs present** to:
+  - Predict risks
+  - Detect inefficiencies
+  - Suggest optimization actions
 
-- **Dynamic (Growth)**:  
-  - Expand feature coverage as business operations grow.  
-  - Integrate new metrics, data sources, and modules when available.
+---
 
-- **Dynamic (Behavior)**:  
-  - Learn from user inputs and reverse-learning pipeline.  
-  - Support new formats, report types, and interaction patterns.
-
-**Agent Edit Protocol Override:**  
-If a Dynamic logic receives repeated related requests, the agent must:
-1. Generate/extend the corresponding logic file in `/logics/`.  
-2. Add/update schemas in `/helpers/schema_registry.py`, tests in `/tests/unit/logic_xxx/`, and registry entries.  
-3. Log changes in `/docs/CHANGELOG.md` with category tag.
+## 12. ID Collision Policy (Critical for Scaling)
+- Effective 2025-08-09:
+  - L-126…L-145: Reserved for Inventory/Production/Fleet deep-spec logics.
+  - Audit/AI/Risk modules in L-181…L-200.
+- New logics must not conflict with existing IDs.
 
 ---
 
 ### Implementation Notes
-- All logic modules must register in `/helpers/schema_registry.py`.
-- Must pass **unit tests + validation tests** before deployment.
-- Agent edits should always:
+- All logic modules must be in `/helpers/schema_registry.py`.
+- Must pass **unit + validation tests** pre-deploy.
+- Agent edits must:
   1. Check this protocol.
-  2. Implement changes in compliance with L4 rules.
+  2. Follow L4 rules strictly.
   3. Log changes in `/docs/CHANGELOG.md`.
 
 ---
 
-### ID Collision Policy (One ID → One File)
-- Effective 2025-08-09, the ID range L-126…L-145 is authoritative for Inventory/Production/Fleet deep-spec logics.
-- Older audit/AI/risk modules previously occupying L-126…L-145 have been moved to L-181…L-200 with file renames and updated `LOGIC_META["id"]`.
-- Total logics: target 200+. New additions should avoid existing IDs and update docs accordingly.
-
----
-
 **Author:** Hardy  
-**Last Updated:** 2025-08-09
+**Last Updated:** 2025-08-15

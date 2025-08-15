@@ -2,12 +2,24 @@ from __future__ import annotations
 
 import time
 import logging
+import uuid
 from typing import Any, Dict, List, Tuple, Callable, Optional
 
 from core.operate_base import OperateInput, OperateOutput
 from core.registry import route
 from core.logic_loader import LOGIC_REGISTRY, LogicMeta, load_all_logics
 from helpers.execution_engine import DAGExecutionEngine, NodeSpec, run_dag
+from helpers.telemetry import (
+    span,
+    emit_orchestration_telemetry,
+    set_org_context,
+    set_run_context,
+    set_dag_context,
+    set_logic_context,
+    get_deep_metrics,
+)
+from helpers.alerts import evaluate_alerts, create_alert, AlertSeverity
+from helpers.anomaly_detector import detect_anomaly
 
 logger = logging.getLogger(__name__)
 
@@ -52,57 +64,199 @@ def run_mis(
     Returns:
         OperateOutput with orchestrated results
     """
-    # Ensure logic registry is ready for fallback discovery
-    if not LOGIC_REGISTRY:
-        try:
-            load_all_logics()
-        except Exception:
-            pass
+    run_id = str(uuid.uuid4())
 
-    if use_dag:
-        return _run_mis_with_dag(input, sections, max_workers, progress_callback)
-    else:
-        return _run_mis_sequential(input, sections)
+    with span(
+        "mis_orchestration",
+        run_id=run_id,
+        org_id=input.org_id,
+        sections_count=len(sections),
+        use_dag=use_dag,
+        max_workers=max_workers,
+    ):
+
+        # Set telemetry context
+        set_org_context(input.org_id)
+        set_run_context(run_id)
+
+        # Ensure logic registry is ready for fallback discovery
+        if not LOGIC_REGISTRY:
+            try:
+                load_all_logics()
+            except Exception:
+                pass
+
+        if use_dag:
+            return _run_mis_with_dag(
+                input, sections, max_workers, progress_callback, run_id
+            )
+        else:
+            return _run_mis_sequential(input, sections, run_id)
 
 
-def _run_mis_sequential(input: OperateInput, sections: List[str]) -> OperateOutput:
+def _run_mis_sequential(
+    input: OperateInput, sections: List[str], run_id: str
+) -> OperateOutput:
     """Legacy sequential execution for backward compatibility."""
     records: Dict[str, Any] = {}
     missing: List[str] = []
 
     for sec in sections:
-        op = route(sec)
-        if op is not None:
-            try:
-                out = op(input)
-                records[sec] = out.content
-                continue
-            except Exception as e:
-                records[sec] = {"error": str(e)}
-                continue
+        dag_node_id = f"sequential_{sec}"
+        set_dag_context(dag_node_id, [])
 
-        # Fallback to logic handlers discovered by tags/title
-        payload = _to_payload(input)
-        candidates = _find_logic_by_token(sec)
-        if not candidates:
-            missing.append(sec)
-            continue
-        sec_results: Dict[str, Any] = {}
-        for lid, (_handler, _meta) in [
-            (lid, LOGIC_REGISTRY[lid]) for lid, _m in candidates
-        ]:
-            handler, meta = LOGIC_REGISTRY[lid]
-            try:
-                sec_results[lid] = handler(payload)
-            except Exception as e:
-                sec_results[lid] = {"error": str(e)}
-        records[sec] = sec_results
+        with span(
+            "sequential_section", run_id=run_id, dag_node_id=dag_node_id, section=sec
+        ):
+
+            op = route(sec)
+            if op is not None:
+                try:
+                    start_time = time.perf_counter()
+                    out = op(input)
+                    duration_ms = (time.perf_counter() - start_time) * 1000.0
+                    records[sec] = out.content
+
+                    # Set logic context for telemetry
+                    set_logic_context(f"operate_{sec}")
+
+                    # Detect anomalies for this execution
+                    anomaly_result = detect_anomaly(
+                        f"operate_{sec}_latency",
+                        duration_ms,
+                        input.org_id,
+                        f"operate_{sec}",
+                        dag_node_id,
+                    )
+
+                    emit_orchestration_telemetry(
+                        run_id=run_id,
+                        dag_node_id=dag_node_id,
+                        logic_id=f"operate_{sec}",
+                        duration_ms=duration_ms,
+                        status="success",
+                        anomaly_score=(
+                            anomaly_result.overall_score
+                            if anomaly_result.is_anomaly
+                            else 0.0
+                        ),
+                    )
+                    continue
+                except Exception as e:
+                    duration_ms = (time.perf_counter() - start_time) * 1000.0
+                    records[sec] = {"error": str(e)}
+
+                    # Set logic context for telemetry
+                    set_logic_context(f"operate_{sec}")
+
+                    # Detect anomalies for this execution
+                    anomaly_result = detect_anomaly(
+                        f"operate_{sec}_latency",
+                        duration_ms,
+                        input.org_id,
+                        f"operate_{sec}",
+                        dag_node_id,
+                    )
+
+                    emit_orchestration_telemetry(
+                        run_id=run_id,
+                        dag_node_id=dag_node_id,
+                        logic_id=f"operate_{sec}",
+                        duration_ms=duration_ms,
+                        status="error",
+                        error_taxonomy=type(e).__name__,
+                        anomaly_score=(
+                            anomaly_result.overall_score
+                            if anomaly_result.is_anomaly
+                            else 0.0
+                        ),
+                    )
+                    continue
+
+            # Fallback to logic handlers discovered by tags/title
+            payload = _to_payload(input)
+            candidates = _find_logic_by_token(sec)
+            if not candidates:
+                missing.append(sec)
+                continue
+            sec_results: Dict[str, Any] = {}
+            for lid, (_handler, _meta) in [
+                (lid, LOGIC_REGISTRY[lid]) for lid, _m in candidates
+            ]:
+                handler, meta = LOGIC_REGISTRY[lid]
+                try:
+                    start_time = time.perf_counter()
+                    sec_results[lid] = handler(payload)
+                    duration_ms = (time.perf_counter() - start_time) * 1000.0
+
+                    # Set logic context for telemetry
+                    set_logic_context(lid)
+
+                    # Detect anomalies for this execution
+                    anomaly_result = detect_anomaly(
+                        f"{lid}_latency", duration_ms, input.org_id, lid, dag_node_id
+                    )
+
+                    emit_orchestration_telemetry(
+                        run_id=run_id,
+                        dag_node_id=dag_node_id,
+                        logic_id=lid,
+                        duration_ms=duration_ms,
+                        status="success",
+                        anomaly_score=(
+                            anomaly_result.overall_score
+                            if anomaly_result.is_anomaly
+                            else 0.0
+                        ),
+                    )
+                except Exception as e:
+                    duration_ms = (time.perf_counter() - start_time) * 1000.0
+                    sec_results[lid] = {"error": str(e)}
+
+                    # Set logic context for telemetry
+                    set_logic_context(lid)
+
+                    # Detect anomalies for this execution
+                    anomaly_result = detect_anomaly(
+                        f"{lid}_latency", duration_ms, input.org_id, lid, dag_node_id
+                    )
+
+                    emit_orchestration_telemetry(
+                        run_id=run_id,
+                        dag_node_id=dag_node_id,
+                        logic_id=lid,
+                        duration_ms=duration_ms,
+                        status="error",
+                        error_taxonomy=type(e).__name__,
+                        anomaly_score=(
+                            anomaly_result.overall_score
+                            if anomaly_result.is_anomaly
+                            else 0.0
+                        ),
+                    )
+            records[sec] = sec_results
+
+    # Evaluate alerts after execution
+    alerts = evaluate_alerts(input.org_id, "", "mis_orchestrator")
+
+    # Add alert information to metadata
+    alert_info = {
+        "alert_count": len(alerts),
+        "critical_alerts": len(
+            [a for a in alerts if a.severity == AlertSeverity.CRITICAL]
+        ),
+        "warning_alerts": len(
+            [a for a in alerts if a.severity == AlertSeverity.WARNING]
+        ),
+    }
 
     meta = {
         "operator": "mis_orchestrator",
         "sections": sections,
         "missing": missing,
         "execution_mode": "sequential",
+        "run_id": run_id,
+        "alerts": alert_info,
     }
     return OperateOutput(content={"sections": records}, meta=meta)
 
@@ -112,6 +266,7 @@ def _run_mis_with_dag(
     sections: List[str],
     max_workers: int = 4,
     progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+    run_id: str = None,
 ) -> OperateOutput:
     """Enhanced DAG-based execution with advanced features."""
     payload = _to_payload(input)
@@ -363,6 +518,20 @@ def run_dag(
                 indeg[b] = max(0, indeg.get(b, 0) - 1)
                 if indeg[b] == 0 and b in node_map:
                     ready.append(b)
+
+    # Evaluate alerts after DAG execution
+    alerts = evaluate_alerts(payload.get("org_id", ""), "", "mis_orchestrator_dag")
+
+    # Add alert information to results
+    results["_alerts"] = {
+        "alert_count": len(alerts),
+        "critical_alerts": len(
+            [a for a in alerts if a.severity == AlertSeverity.CRITICAL]
+        ),
+        "warning_alerts": len(
+            [a for a in alerts if a.severity == AlertSeverity.WARNING]
+        ),
+    }
 
     # Return the expected format for tests
     return {

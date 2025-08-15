@@ -509,3 +509,165 @@ def validate_provenance(prov: Dict[str, Any]) -> None:
             raise TypeError(f"provenance[{field}].ids must be list")
         if not isinstance(entry["filters"], dict):
             raise TypeError(f"provenance[{field}].filters must be dict")
+
+
+# Phase 4.1 Observability Utilities
+
+
+def standardize_provenance_map(provenance: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Standardize provenance map for telemetry and logging.
+
+    Args:
+        provenance: Raw provenance map from logic execution
+
+    Returns:
+        Standardized provenance map with consistent structure
+    """
+    if not provenance:
+        return {"sources": [], "figures": {}, "keys_count": 0}
+
+    standardized = {"sources": [], "figures": {}, "keys_count": 0}
+
+    # Handle different provenance formats
+    if "sources" in provenance:
+        standardized["sources"] = provenance["sources"]
+
+    if "figures" in provenance:
+        standardized["figures"] = provenance["figures"]
+        standardized["keys_count"] = len(provenance["figures"])
+
+    # Count total keys for telemetry
+    if isinstance(provenance, dict):
+        standardized["keys_count"] = len(provenance.keys())
+
+    return standardized
+
+
+def redact_pii_from_provenance(provenance: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Redact PII from provenance map for safe logging.
+
+    Args:
+        provenance: Raw provenance map
+
+    Returns:
+        Provenance map with PII redacted
+    """
+    if not provenance:
+        return provenance
+
+    # PII patterns to redact
+    pii_patterns = {
+        "gstin",
+        "pan",
+        "aadhar",
+        "ssn",
+        "account_number",
+        "card_number",
+        "phone",
+        "email",
+        "address",
+        "name",
+    }
+
+    def redact_value(value):
+        if isinstance(value, str):
+            value_lower = value.lower()
+            if any(pattern in value_lower for pattern in pii_patterns):
+                return "[REDACTED]"
+        return value
+
+    def redact_dict(data):
+        if not isinstance(data, dict):
+            return data
+
+        redacted = {}
+        for key, value in data.items():
+            key_lower = key.lower()
+            if any(pattern in key_lower for pattern in pii_patterns):
+                redacted[key] = "[REDACTED]"
+            elif isinstance(value, dict):
+                redacted[key] = redact_dict(value)
+            elif isinstance(value, list):
+                redacted[key] = [
+                    redact_dict(item) if isinstance(item, dict) else redact_value(item)
+                    for item in value
+                ]
+            else:
+                redacted[key] = redact_value(value)
+
+        return redacted
+
+    return redact_dict(provenance)
+
+
+def get_provenance_metrics(provenance: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract metrics from provenance map for telemetry.
+
+    Args:
+        provenance: Raw provenance map
+
+    Returns:
+        Dictionary with provenance metrics
+    """
+    if not provenance:
+        return {
+            "sources_count": 0,
+            "figures_count": 0,
+            "total_keys": 0,
+            "has_zoho_sources": False,
+            "has_calculated_sources": False,
+        }
+
+    metrics = {
+        "sources_count": 0,
+        "figures_count": 0,
+        "total_keys": len(provenance.keys()),
+        "has_zoho_sources": False,
+        "has_calculated_sources": False,
+    }
+
+    # Count sources
+    if "sources" in provenance and isinstance(provenance["sources"], list):
+        metrics["sources_count"] = len(provenance["sources"])
+        for source in provenance["sources"]:
+            if isinstance(source, dict):
+                source_type = source.get("source", "").lower()
+                if "zoho" in source_type:
+                    metrics["has_zoho_sources"] = True
+                elif "calculat" in source_type:
+                    metrics["has_calculated_sources"] = True
+
+    # Count figures
+    if "figures" in provenance and isinstance(provenance["figures"], dict):
+        metrics["figures_count"] = len(provenance["figures"])
+
+    return metrics
+
+
+def create_telemetry_provenance(provenance: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Create telemetry-ready provenance map with redaction and metrics.
+
+    Args:
+        provenance: Raw provenance map
+
+    Returns:
+        Telemetry-ready provenance map
+    """
+    # Standardize the provenance
+    std_provenance = standardize_provenance_map(provenance)
+
+    # Redact PII
+    redacted_provenance = redact_pii_from_provenance(std_provenance)
+
+    # Get metrics
+    metrics = get_provenance_metrics(provenance)
+
+    return {
+        "provenance": redacted_provenance,
+        "metrics": metrics,
+        "keys_count": metrics["total_keys"],
+    }

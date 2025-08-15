@@ -1,4 +1,5 @@
 from __future__ import annotations
+import time
 from typing import Any, Dict, List, Optional
 
 # Import real helper functions
@@ -8,6 +9,12 @@ try:
     )
     from helpers.rules_engine import validate_accounting as real_validate_accounting
     from helpers.learning_hooks import score_confidence as real_score_confidence
+    from helpers.telemetry import (
+        emit_logic_telemetry,
+        set_logic_context,
+        get_deep_metrics,
+    )
+    from helpers.provenance import create_telemetry_provenance
 except ImportError:
     # Fallback to placeholder functions if helpers not available
     def real_log_with_deltas(*args, **kwargs):
@@ -18,6 +25,18 @@ except ImportError:
 
     def real_score_confidence(*args, **kwargs):
         return 0.75
+
+    def emit_logic_telemetry(*args, **kwargs):
+        pass
+
+    def set_logic_context(*args, **kwargs):
+        pass
+
+    def get_deep_metrics(*args, **kwargs):
+        return {}
+
+    def create_telemetry_provenance(*args, **kwargs):
+        return {"provenance": {}, "metrics": {}, "keys_count": 0}
 
 
 def make_provenance(
@@ -272,3 +291,133 @@ def log_with_deltas_and_anomalies(
             "deltas": [],
             "anomalies": [],
         }
+
+
+def handle_l4_with_telemetry(
+    logic_id: str, handler_func, payload: Dict[str, Any], org_id: str = None, **kwargs
+) -> Dict[str, Any]:
+    """
+    Execute logic handler with comprehensive telemetry and L4 compliance.
+
+    Args:
+        logic_id: The logic identifier
+        handler_func: The logic handler function
+        payload: Input payload
+        org_id: Organization ID for telemetry
+        **kwargs: Additional arguments
+
+    Returns:
+        L4-compliant result with telemetry
+    """
+    start_time = time.perf_counter()
+    status = "success"
+    error_taxonomy = ""
+    confidence = 0.0
+    alerts_count = 0
+    provenance_keys = 0
+    inputs_size = len(str(payload))
+    outputs_size = 0
+
+    try:
+        # Execute the logic handler
+        result = handler_func(payload, **kwargs)
+
+        # Extract L4 components
+        if isinstance(result, dict):
+            # Handle L4 contract format
+            logic_result = result.get("result", result)
+            provenance = result.get("provenance", {})
+            confidence = result.get("confidence", 0.75)
+            alerts = result.get("alerts", [])
+            alerts_count = len(alerts) if isinstance(alerts, list) else 0
+
+            # Process provenance for telemetry
+            telemetry_provenance = create_telemetry_provenance(provenance)
+            provenance_keys = telemetry_provenance["keys_count"]
+
+            # Calculate output size
+            outputs_size = len(str(logic_result))
+
+            # Validate accounting rules
+            validation_alerts = validate_accounting(logic_result)
+            if validation_alerts:
+                alerts.extend(validation_alerts)
+                alerts_count = len(alerts)
+
+            # Log history and deltas
+            history_data = log_with_deltas_and_anomalies(
+                logic_id=logic_id,
+                inputs=payload,
+                outputs=logic_result,
+                provenance=provenance,
+            )
+
+            # Update result with validation alerts
+            result["alerts"] = alerts
+
+        else:
+            # Handle non-L4 format
+            logic_result = result
+            provenance = {}
+            confidence = 0.75
+            alerts = []
+            outputs_size = len(str(result))
+
+            # Convert to L4 format
+            result = {
+                "result": logic_result,
+                "provenance": provenance,
+                "confidence": confidence,
+                "alerts": alerts,
+            }
+
+        return result
+
+    except Exception as e:
+        status = "error"
+        error_taxonomy = type(e).__name__
+        confidence = 0.0
+
+        # Return error result in L4 format
+        return {
+            "result": {"error": str(e)},
+            "provenance": {},
+            "confidence": confidence,
+            "alerts": [f"Execution error: {str(e)}"],
+        }
+
+    finally:
+        # Emit telemetry
+        duration_ms = (time.perf_counter() - start_time) * 1000.0
+
+        # Set logic context for telemetry
+        set_logic_context(logic_id)
+
+        # Detect anomalies for this execution
+        from helpers.anomaly_detector import detect_anomaly
+
+        anomaly_result = detect_anomaly(
+            f"{logic_id}_latency",
+            duration_ms,
+            org_id or payload.get("org_id", "unknown"),
+            logic_id,
+            "",
+        )
+
+        emit_logic_telemetry(
+            logic_id=logic_id,
+            org_id=org_id or payload.get("org_id", "unknown"),
+            duration_ms=duration_ms,
+            status=status,
+            inputs_size=inputs_size,
+            outputs_size=outputs_size,
+            confidence=confidence,
+            alerts_count=alerts_count,
+            cache_hit=False,  # TODO: Implement cache detection
+            provenance_keys=provenance_keys,
+            error_taxonomy=error_taxonomy,
+            retry_attempts=0,
+            anomaly_score=(
+                anomaly_result.overall_score if anomaly_result.is_anomaly else 0.0
+            ),
+        )
