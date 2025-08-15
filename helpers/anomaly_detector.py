@@ -19,6 +19,7 @@ import statistics
 
 from .telemetry import event, incr, get_deep_metrics
 from .alerts import create_alert, AlertSeverity
+from .anomaly_types import AnomalyScore, AnomalyResult
 
 _log = logging.getLogger("anomaly_detector")
 
@@ -41,33 +42,7 @@ def _thresholds() -> Dict[str, float]:
 ML_ANOMALY_ENABLED = os.environ.get("ML_ANOMALY_ENABLED", "false").lower() == "true"
 
 
-@dataclass
-class AnomalyScore:
-    """Anomaly score with metadata."""
-
-    score: float
-    method: str
-    threshold: float
-    is_anomaly: bool
-    confidence: float
-    context: Dict[str, Any]
-    timestamp: _dt.datetime
-
-
-@dataclass
-class AnomalyResult:
-    """Complete anomaly detection result."""
-
-    metric_name: str
-    current_value: float
-    scores: List[AnomalyScore]
-    overall_score: float
-    is_anomaly: bool
-    reason: str
-    timestamp: _dt.datetime
-    org_id: Optional[str] = None
-    logic_id: Optional[str] = None
-    orchestrator_id: Optional[str] = None
+## Dataclasses are imported from helpers.anomaly_types to ensure stable identity across reloads
 
 
 class StatisticalAnomalyDetector:
