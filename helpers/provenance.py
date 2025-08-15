@@ -640,9 +640,16 @@ def get_provenance_metrics(provenance: Dict[str, Any]) -> Dict[str, Any]:
                 elif "calculat" in source_type or source_type == "calculation":
                     metrics["has_calculated_sources"] = True
 
-    # Count figures
+    # Count figures and detect calculated sources in figures
     if "figures" in provenance and isinstance(provenance["figures"], dict):
         metrics["figures_count"] = len(provenance["figures"])
+        for _k, fig in provenance["figures"].items():
+            if isinstance(fig, dict):
+                src = str(fig.get("source", "")).lower()
+                if src in {"calculation", "calculated", "derived"}:
+                    metrics["has_calculated_sources"] = True
+                if "method" in fig:
+                    metrics["has_calculated_sources"] = True
 
     return metrics
 

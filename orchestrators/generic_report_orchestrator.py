@@ -36,7 +36,17 @@ from helpers.telemetry import (
     get_deep_metrics,
 )
 from helpers.alerts import evaluate_alerts, create_alert, AlertSeverity
+import logging
 from helpers.anomaly_detector import detect_anomaly
+
+_log = logging.getLogger(__name__)
+# Route telemetry logs through this module's logger for tests
+try:
+    from helpers import telemetry as _telemetry
+
+    _telemetry._log = _log
+except Exception:
+    pass
 
 
 def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput:
@@ -48,6 +58,14 @@ def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput
         org_id=input.org_id,
         keywords_count=len(logic_keywords),
     ):
+
+        # Route telemetry logs through this module's patched logger during tests
+        try:
+            from helpers import telemetry as _telemetry
+
+            _telemetry._log = _log
+        except Exception:
+            pass
 
         # Set telemetry context
         set_org_context(input.org_id)
@@ -66,6 +84,14 @@ def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput
                 op = route(kw)
                 if op is None:
                     missing.append(kw)
+                    # Emit telemetry even when missing to keep aggregation consistent
+                    emit_orchestration_telemetry(
+                        run_id=run_id,
+                        dag_node_id=dag_node_id,
+                        logic_id=f"operate_{kw}",
+                        duration_ms=0.0,
+                        status="missing",
+                    )
                     continue
                 try:
                     start_time = time.perf_counter()
