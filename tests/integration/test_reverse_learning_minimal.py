@@ -1,7 +1,7 @@
 import json, os
 from orchestrators.generic_report_orchestrator import (
     learn_from_pdf,
-    generate_from_learned,
+    generate_from_learned_mapping,
 )
 
 
@@ -15,10 +15,13 @@ def test_learn_and_generate_minimal(tmp_path):
         "period": "2025-06",
         "source_fields": {"Revenue": 12345.0, "Expenses": 6789.0},
     }
-    out = generate_from_learned(payload, learned["mapping"])
+    out = generate_from_learned_mapping(payload, learned["mapping"])
     # Assert: contract shape + provenance anchors
     assert set(["result", "provenance", "confidence", "alerts"]).issubset(out.keys())
     assert "Revenue" in out["result"] and "Expenses" in out["result"]
-    assert "Revenue" in out["provenance"] and "Expenses" in out["provenance"]
+    assert (
+        "Revenue" in out["provenance"]["fields"]
+        and "Expenses" in out["provenance"]["fields"]
+    )
     # When fields are coherent, expect enabled True
     assert out.get("enabled") in (True, False)

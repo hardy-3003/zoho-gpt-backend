@@ -25,7 +25,7 @@ from helpers.schema_registry import validate_output_contract
 from helpers.rules_engine import load_regulation_rules
 from typing import Any, Dict
 
-LOGIC_ID = "L-XXX"
+LOGIC_ID = "L-016"
 
 try:  # noqa: F401
     from helpers.zoho_client import get_json  # type: ignore

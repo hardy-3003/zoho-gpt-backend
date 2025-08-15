@@ -17,7 +17,7 @@ from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.learning_hooks import score_confidence as _score
 from helpers.schema_registry import validate_output_contract
 from typing import Any, Dict
-LOGIC_ID = "L-XXX"
+LOGIC_ID = "L-011"
 
 # Prefer helpers; define safe fallbacks to keep imports working in all envs
 try:  # noqa: F401 - imported for side-effect/use when present

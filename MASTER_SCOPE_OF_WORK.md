@@ -1,151 +1,383 @@
-# Accounting Auto‑Auditable Backend (MCP‑Ready) — **MASTER SCOPE OF WORK**
-**Version:** 2025-08-08 • **Owner:** Hardik • **Status:** Living document (authoritative)
+V4 — Accounting Auto-Auditable Backend (Deterministic-First, Evidence OS, MCP-Ready & MCP-Independent) — MASTER SCOPE OF WORK
+Version: 2025-08-15 • Owner: Hardik • Status: Living document (authoritative)
 
-> This file is the single source of truth for scope, principles, and structure. 
-> Keep and re‑share this file if anything ever resets.
+> Single source of truth for scope, principles, structure, governance, and acceptance criteria.  
+> Keep and re-share this file if anything ever resets. Supersedes prior versions (V1/V2) with stronger determinism, evidence guarantees, regulatory automation, and production SLOs.
 
+──────────────────────────────────────────────────────────────────────────────
 
----
+0) Ground Rules — L4+ (Autonomous, Closed-Loop Evolution, Deterministic-First)
 
-## 0) Ground Rules (L4 — Autonomous, Closed‑Loop Evolution)
-**Applies to every logic module (.py) and every integration.**
-1. **Self‑Learning:** Each logic improves over time from new inputs, user corrections, and usage patterns. Include hooks/placeholders for GPT‑based evaluations, pattern extraction, confidence scoring, and retry logic.
-2. **History‑Aware:** Persist changelogs for invoices, bills, POs, salaries, items, taxes, etc. Track price changes, deltas by period, vendor and cross‑org deviation. Enable anomaly flags for manipulation and inconsistent trends.
-3. **Reverse‑Learning from Custom Inputs:** On an unfamiliar report (e.g., new MIS PDF), auto‑extract fields, map each figure to its Zoho origin, learn the format, and generate it next time without help. Log every new format learned.
-4. **Expandable in the Same File:** Logic must grow inside its own .py (internal subtrees/strategies). Create new files only for base helpers/shared utilities.
-5. **Smart Accounting Validation:** Autonomously check for accounting rule violations (unbalanced reversals, mismatched categories, missing journals, date anomalies) and suggest fixes.
-6. **No Rewrites:** Everything is upgradable; no “start from scratch.” Migrations and adapters preserve behavior while extending capability.
-7. **Many‑to‑One Orchestration:** Reports (e.g., MIS) are composed by mediator/orchestrator modules that can call **2 → ∞** logics. Configurable pipelines, partial retries, graceful degradation.
-8. **Auto‑Expansion:** From repeated requests/patterns, auto‑create/extend logic stubs (e.g., inferred `client_trend_analysis`) and register them safely with tests and guardrails.
+Applies to every logic module (.py), connector, orchestrator, rule-pack, and surface.
 
----
+1. Deterministic-First, Generative-Second  
+   • Accounting/compliance conclusions MUST be produced by deterministic rules (rules_engine + Regulatory OS DSL).  
+   • LLMs may propose mappings, narratives, remediations, and prioritizations WITH confidence scores; these are advisory.
 
-## 1) Architecture & Folder Layout
-```
+2. Evidence or It Didn’t Happen  
+   • Every figure/statement must carry provenance into a WORM, content-addressed Evidence Graph (hash-chained).  
+   • Closed periods are replayable (byte-identical) from frozen inputs + rule-pack versions.
+
+3. Self-Learning (Within Guardrails)  
+   • Each logic maintains in-file strategy registry and feedback loops.  
+   • Learning can never overwrite deterministic truth; it only proposes better strategies or mappings.
+
+4. History-Aware  
+   • Persist changelogs for invoices, bills, POs, salaries, items, taxes, etc. Track deltas (MoM, YoY), vendor and cross-org deviation.
+
+5. Reverse-Learning for New Formats  
+   • On unfamiliar reports (e.g., MIS PDF), auto-extract → map → verify → register schema → regenerate next time with provenance.
+
+6. Expandable in the Same File  
+   • Each logic evolves in its own `.py` via internal strategies/subtrees. New files only for shared helpers/utilities.
+
+7. Many-to-One Orchestration  
+   • Orchestrators compose **2 → ∞** logics with DAG execution, partial retries, graceful degradation, and applied_rule_set attachment.
+
+8. Auto-Expansion  
+   • Repeated unmet requests auto-spawn logic stubs with tests and safe registration.
+
+9. Zero-Trust by Default  
+   • Inputs validated against schemas; PII redaction; least privilege; no portal automation without explicit consent.
+
+10. Cost-&-SLO-Aware  
+   • Deterministic caches, rate limits, concurrency budgets; measurable SLOs (availability, p95/p99 latencies).
+
+──────────────────────────────────────────────────────────────────────────────
+
+1) Architecture & Folder Layout
+
 repo/
-  main.py                      # FastAPI app, MCP endpoints, tool router
-  /logics/                     # 200+ operate files (one per logic, L4-compliant)
+  main.py                                # FastAPI app; MCP + non-MCP surfaces; tool router; SSE
+  /logics/                               # 200+ operate files (L4-compliant, deterministic core)
     logic_001_profit_loss.py
     ...
-    logic_200_vendor_side_carbon_emissions_estimator.py
-  /orchestrators/              # Mediators for multi-logic reports (e.g., MIS)
+    logic_230_regulatory_delta_explainer.py
+  /orchestrators/
     mis_orchestrator.py
     generic_report_orchestrator.py
-  /helpers/                    # Shared utilities (no business logic)
-    zoho_client.py             # Auth, rate limiting, retries, caching
-    pdf_extractor.py           # OCR/parse, table/field detection
-    schema_registry.py         # JSONSchemas for inputs/outputs
-    rules_engine.py            # Validations & guardrails
-    history_store.py           # Append-only event log (queries, deltas, versions)
-    learning_hooks.py          # Self-learning interfaces & scoring
-  /analyzers/                  # Anomaly detectors, trend engines
-    anomaly_engine.py
-    delta_compare.py
-  /prompts/                    # Few-shot prompts & guidance (if/when LLM used)
-  /tests/                      # Unit, integration, contract tests
-  /docs/                       # ADRs, SOPs, how-tos
-```
+  /helpers/
+    zoho_client.py                       # Auth, backoff, retries, caching
+    pdf_extractor.py                     # OCR/parse; table/field detection
+    schema_registry.py                   # JSONSchemas for inputs/outputs
+    rules_engine.py                      # Deterministic rules + guardrails + DSL hooks
+    history_store.py                     # Append-only event/event-diff store
+    learning_hooks.py                    # Self-learning interfaces & scoring
+    cache.py                             # Layered cache (memory/redis/ttl)
+    feature_flags.py                     # Launch-darkly-style toggles (local impl)
+  /regulatory_os/                        # Rule packs + watchers + DSL + adapters
+    rule_packs/                          # e.g., gst@2025-08/, itd@2025-08/
+    watchers/                            # CBIC/CBDT/GSTN/IRP/E-Way Bill/API Setu diffs
+    dsl/                                 # Rules DSL grammar + compiler/transpiler
+    adapters/                            # Normalizers: GSTR-2B, 26AS, AIS, e-invoice, AA
+  /connectors/                           # Consent-based, MCP-independent sources
+    apisetu_client.py
+    gsp_gst_client.py
+    irp_einvoice_client.py
+    ewaybill_client.py
+    itd_traces_client.py
+    aa_client.py
+    mca_client.py
+  /evidence/                             # Evidence OS
+    ledger.py                            # WORM (hash-chained, Merkle-rooted)
+    blob_store.py                        # Content-addressed artifacts
+    signer.py                            # Optional signing for legal defensibility
+  /observability/
+    prometheus/                          # Rules, alerts (SLOs)
+    dashboards/                          # Grafana JSON
+    runbooks/                            # Incident runbooks (SLO, latency, deps)
+  /surfaces/
+    openapi.yaml                         # OpenAPI for /api/execute etc.
+    graphql/                             # GraphQL schema & resolvers
+    cli/                                 # Minimal CLI wrapper
+  /prompts/                              # Few-shot prompts for narratives (non-authoritative)
+  /tests/                                # Unit, integration, golden, contract, DSL, security, load
+  /docs/                                 # ADRs, SOPs, CHANGELOG, learned formats
 
-**Key tenets**
-- **MCP‑ready**: `/mcp/manifest`, `/mcp/search`, `/mcp/fetch` with POST support; SSE where applicable.
-- **Front‑end agnostic**: No hard dependency on ChatGPT UI; callable from any client.
-- **Observability**: Structured logs + metrics per logic and per orchestrated pipeline.
-- **Security**: AuthN/Z for sensitive endpoints (`/generate_mis`, `/save_credentials`), rate limiting, input schemas.
+Tenets
+• MCP-ready: /mcp/manifest, /mcp/search (POST), /mcp/fetch (POST + SSE).  
+• MCP-independent: /api/execute, /graphql, /webhooks, /sse, /cli.  
+• Observability: Structured logs/metrics + SLOs per logic/orchestrator.  
+• Security: AuthN/Z, rate limits, schema validation, consent objects, PII redaction.  
+• Data Residency: Configurable storage backends with encryption at rest + region pinning.
 
----
+──────────────────────────────────────────────────────────────────────────────
 
-## 2) Logic Module Contract (Template)
-Each logic file **must implement**:
-```python
-# logic_xxx_example.py
-\"\"\"
+2) Logic Module Contract (Template, Deterministic-First)
+
+"""
 Title: <Human-friendly name>
 ID: L-XXX
 Tags: ["mis","pnl","compliance"]
-Parent Logic: <optional>
+Category: <Static | Dynamic(Regulation) | Dynamic(Patterns) | Dynamic(Growth) | Dynamic(Behavior)>
 Required Inputs: <typed schema or JSONSchema ref>
 Outputs: <typed schema>
 Assumptions: <explicit>
-Evolution Notes: <how it self-learns; registries used>
-\"\"\"
+Evidence: <which sources will be attached>
+Evolution Notes: <self-learning pathways; strategies; data>
+"""
 
 from typing import Any, Dict
+from helpers.schema_registry import validate_payload
 from helpers.learning_hooks import record_feedback, score_confidence
 from helpers.history_store import write_event
-from helpers.rules_engine import validate_accounting
+from helpers.rules_engine import validate_accounting, run_rule_pack
+from evidence.ledger import attach_evidence
 
 def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    # 1) Validate & parse inputs (schema_registry)
-    # 2) Fetch source data (zoho_client)
-    # 3) Compute result (deterministic core)
-    # 4) Run accounting validations
-    # 5) Log history + deltas
-    # 6) Self-learning hooks (update strategy weights, add patterns)
-    # 7) Return outputs with confidence & provenance map
+    # 1) Validate inputs
+    validate_payload("L-XXX", payload)
+
+    # 2) Fetch source data (zoho_client / connectors / cache)
+    #    data = ...
+
+    # 3) Deterministic core: rules_engine + (optional) regulatory_os DSL
+    #    result, applied_rule_set = run_rule_pack("gst", data, context=payload)
+
+    # 4) Accounting validations
+    #    alerts += validate_accounting(result)
+
+    # 5) Evidence: attach_evidence(...) → returns graph handles per figure
+    #    provenance = attach_evidence(result, sources=data)
+
+    # 6) History: write_event(...)
+    #    write_event(logic="L-XXX", inputs=payload, outputs=result, provenance=provenance)
+
+    # 7) Self-learning (advisory only)
+    #    record_feedback("L-XXX", context=payload, outputs=result)
+
+    # 8) Optional LLM narratives/remediations (non-authoritative)
+    #    explanation = ...
+
     return {
-      "result": ...,
-      "provenance": {...},  # zoho endpoints/ids that produced each figure
-      "confidence": score_confidence(...),
-      "alerts": [...],      # anomalies / rule violations
+      "result": ...,                                 # deterministic object/array/number
+      "provenance": {...},                           # evidence://node-id handles
+      "confidence": score_confidence(...),           # deterministic heuristic
+      "alerts": [...],                                # rule violations with severities
+      "applied_rule_set": {...},                     # pack versions + effective dates
+      "explanation": "optional narrative (advisory)"
     }
-```
 
-**Self‑learning inside the file**
-- Keep a small **strategy registry** (JSON or lightweight state) per logic to add variants/heuristics over time.
-- Always record **provenance** (which Zoho entity/endpoint produced each figure).
+Output Contract (Every Logic)
+{
+  "result": <object/array/number>,
+  "provenance": { "<figure_key>": ["evidence://<node-id>", "..."] },
+  "confidence": <0.0-1.0>,
+  "alerts": [
+    { "code": "RULE_<...>", "severity": "info|warn|error", "message": "...", "evidence": ["evidence://..."] }
+  ],
+  "applied_rule_set": {
+    "packs": { "gst": "gst@2025-08", "itd": "itd@2025-08" },
+    "effective_date_window": { "from": "YYYY-MM-DD", "to": "YYYY-MM-DD" }
+  }
+}
 
----
+Hard Rules
+• No PII in messages/logs; IDs only.  
+• Confidence is computed by deterministic heuristics; LLM confidence is advisory only.  
+• Missing data is explicit (null + alert), never silently omitted.
 
-## 3) Orchestration (2 → ∞ logics)
-- **Graph‑based execution**: orchestrators define DAGs of logic calls with declared inputs/outputs.
-- **Partial failure tolerance**: continue with available results; annotate missing pieces.
-- **Auto‑discovery**: orchestrator can discover and include new logics matching tags/rules.
-- **Mediator examples**:
-  - `mis_orchestrator.py` (configurable sections using 10–300+ logics)
-  - `generic_report_orchestrator.py` (learned formats from PDFs/templates)
+──────────────────────────────────────────────────────────────────────────────
 
----
+3) Orchestration (2 → ∞)
 
-## 4) Reverse‑Learning Pipeline (New MIS PDFs → Working Generators)
-1. **Ingest** PDF → `pdf_extractor.py` parses tables/labels/values.
-2. **Field candidate mapping** to Zoho via heuristics + nomenclature maps.
-3. **Provenance learning**: persist a mapping (field → Zoho endpoint/filter/path).
-4. **Schema capture**: register new report schema; version it.
-5. **Verification pass**: reconcile against totals/subtotals; highlight mismatches.
-6. **Auto‑enable generation** next time; expose as an orchestrated report.
+• Graph-based execution: DAG with declared inputs/outputs and data contracts.  
+• Partial failure tolerance: Continue with available results; annotate gaps with completeness score.  
+• Auto-discovery: Orchestrators discover and include new logics matching tags/rules.  
+• Regulatory lens: Attach applied_rule_set (+ versions) for each section.  
+• Feature flags: Orchestrator can toggle experimental logics per org/environment.
 
----
+Orchestrator Output MUST include:
+{
+  "sections": { "<logic_id_or_name>": <logic_output>, ... },
+  "alerts": [ ... merged and deduped ... ],
+  "completeness": 0.0-1.0,
+  "applied_rule_set": { ... merged pack versions ... }
+}
 
-## 5) History, Deltas & Anomaly Detection
-- **history_store**: append-only events: inputs, outputs, data snapshots, diffs.
-- **delta_compare**: period‑to‑period (YoY, MoM), cross‑org, vendor‑wise.
-- **anomaly_engine**: rules + heuristics (e.g., backdated entry spikes, round‑off abuse, category drift).
+──────────────────────────────────────────────────────────────────────────────
 
----
+4) Reverse-Learning Pipeline (New MIS PDFs → Working Generators)
 
-## 6) Testing, Observability, and Upgrades
-- **Tests**: unit per logic; integration for orchestrators; contract tests for Zoho APIs.
-- **Telemetry**: per logic runtime, cache hit rate, error taxonomy, anomaly counts.
-- **Upgrades**: adapters for signature changes; migration scripts for learned schemas; never rewrite from zero.
+1. Ingest PDF → pdf_extractor parses tables/labels/values.  
+2. Field mapping → canonical schemas via nomenclature maps.  
+3. Provenance learning → persist mapping (field → endpoint/path/filter).  
+4. Schema capture → register versioned report schema.  
+5. Verification → reconcile totals/subtotals; flag mismatches.  
+6. Auto-enable generation → expose as orchestrated report next time (with evidence).
 
----
+──────────────────────────────────────────────────────────────────────────────
 
-## 7) MCP Endpoints (Behavioral Spec)
-- `/mcp/manifest`: declares tools/inputs/outputs; versioned.
-- `/mcp/search` (POST): understands natural language to logic selection/plan.
-- `/mcp/fetch` (POST): executes logic or orchestrated plans; streams progress if SSE enabled.
-- **Security**: token‑scoped per org; redaction for exports; rate limiters.
+5) Evidence OS (WORM Graph + Artifacts)
 
----
+• ledger.py: Hash-chained WORM ledger with Merkle roots per bundle.  
+• blob_store.py: Content-addressed storage for artifacts (PDFs, JSON, CSV, images).  
+• signer.py: Optional signing (org key) for legal defensibility.  
+• Replay: Recompute closed periods using frozen inputs + rule-packs → byte-identical outputs.  
+• Coverage: ≥90% evidence nodes mapped to outputs for MIS/P&L sections.
 
-## 8) **Master Logic Index (200 modules, live)**
-The following list is authoritative and will continue to grow.  
-**Implementation rule:** one file per logic in `/logics/` named `logic_###_snake_case.py`.
+Example Evidence Node
+{
+  "id": "evidence://gstn/2b/2025-07/line/84523",
+  "hash": "sha256:...",
+  "source": "gstn:gstr2b",
+  "meta": { "gstin": "...", "period": "2025-07", "line_no": 84523 }
+}
 
-# 🧠 MASTER LOGIC FILE LIST
+──────────────────────────────────────────────────────────────────────────────
 
-## ✅ 1–102 Original Business Logic Modules
+6) Regulatory OS (Rule Packs, Watchers, DSL)
 
+• Rule Packs (JSON/YAML): effective_from/to, fixtures, acceptance tests; packs: GST, ITD (TDS/AIS/26AS), MCA.  
+• Watchers: Monitor CBIC/CBDT/GSTN/IRP/E-Way Bill/API Setu changes; open PRs with diff summaries.  
+• Adapters: Normalize payloads (GSTR-2B, 26AS, AIS, e-invoice, e-way bill, AA statements) to canonical schemas.  
+• DSL Compilation: Packs compile to deterministic code paths; orchestrators refuse packs that fail golden tests.  
+• Regulatory Impact Simulator: What-if deltas before effective dates.
+
+Sample Rule Pack (YAML)
+pack: gst@2025-09
+effective_from: 2025-09-01
+effective_to: null
+rules:
+  - id: GST_ITC_ELIGIBILITY
+    when: "invoice.date in_period && invoice.has_einvoice"
+    then: "itc.eligible = true"
+fixtures:
+  inputs: fixtures/gst_2025_09_inputs.json
+  expected: fixtures/gst_2025_09_expected.json
+tests:
+  - assert: "totals.itc_eligible == 123456.78"
+
+──────────────────────────────────────────────────────────────────────────────
+
+7) Connectors, Consent & Compliance (MCP-Independent)
+
+• Connectors live in /connectors/: gsp_gst_client.py, irp_einvoice_client.py, ewaybill_client.py, itd_traces_client.py, aa_client.py, mca_client.py, apisetu_client.py.  
+• Consent Objects: scope, purpose, expiry, retention, lawful basis; enforced at runtime.  
+• Allowed paths: Official APIs or user-in-the-loop uploads (no scraping of restricted portals).  
+• PII Rules: Redact in logs; encrypt at rest; rotate credentials; region pinning.
+
+Consent Object (JSON)
+{
+  "subject": "ORG:60020606976",
+  "scope": ["gst.gstr2b.read", "einvoice.irp.read"],
+  "purpose": "compliance_reconciliation",
+  "expires_at": "2026-03-31T23:59:59Z",
+  "retention_days": 365
+}
+
+──────────────────────────────────────────────────────────────────────────────
+
+8) Security, Privacy & Data Residency
+
+• Authentication: Org-scoped tokens; per-org rate limits; mTLS optional.  
+• Authorization: RBAC with least privilege; per-logic & per-connector scopes.  
+• Secrets: KMS-backed; rotation policy; no secrets in code or logs.  
+• Privacy: PII redaction; selective disclosure; export redaction pipelines.  
+• Residency: Storage backends MUST support region selection and encryption at rest.  
+• Supply-Chain: Pin dependencies; SBOM generation; vulnerability scanning on CI.  
+• Chaos & Fault Tolerance: Backoffs, circuit breakers, bulkheads; dependency health in dashboards.
+
+──────────────────────────────────────────────────────────────────────────────
+
+9) Observability & SLOs
+
+• Metrics per logic: runtime, cache hit rate, error taxonomy, anomaly counts.  
+• Global SLOs: Availability ≥ 99.9%; p95 latency per logic ≤ budgeted ms; p99 ≤ double p95.  
+• Dashboards: SLO Overview, Dependency Lens (Zoho, GSTN, IRP, TRACES, AA).  
+• Alerts: MWMBR (Minutes With Missed Budget Ratio), burn-rate SLO alerts.  
+• Runbooks: Checked into /observability/runbooks/.
+
+Example Prometheus Record/Alert (pseudo-YAML)
+groups:
+- name: slo
+  rules:
+  - record: logic_latency_p95
+    expr: histogram_quantile(0.95, sum(rate(logic_latency_ms_bucket[5m])) by (le, logic))
+  - alert: LogicP95BudgetBreach
+    expr: logic_latency_p95 > on(logic) budget_ms{tier="critical"}
+    for: 10m
+    labels: { severity: "page" }
+    annotations: { runbook: "slo_latency.md" }
+
+──────────────────────────────────────────────────────────────────────────────
+
+10) Testing, Governance & Change Control
+
+Testing Matrix
+• Unit: Each logic; edge cases; schema validation.  
+• Integration: Orchestrators with ≥3 logics; completeness score assertions.  
+• Golden (Regulatory): Rule-packs MUST reproduce known historic outputs (byte-identical).  
+• Contract: Connector req/resp schemas; rate limit/backoff behavior.  
+• Security: PII redaction tests; consent scope enforcement.  
+• Load/Resilience: Soak tests; chaos/load profiles; cache efficacy.
+
+Commit & PR Template
+
+commit
+[<Category>] <Logic/Pack/Connector>: <Short summary>
+- Deterministic changes: ...
+- DSL/Rule pack: ...
+- Evidence: <% coverage>, nodes added: N, merkle_root: <hash>
+- Tests: unit/integration/golden/contract passed
+- Observability: metrics/alerts added
+- Rollback: <one-liner>
+
+PR
+• What changed / why now  
+• Evidence samples (IDs, hashes, merkle root)  
+• Screenshots (dashboards/runbooks)  
+• Risks & rollback  
+• Tags: category:regulation|patterns|growth|behavior|static
+
+Definition of Done (per change)
+• Deterministic implementation + tests pass (incl. goldens).  
+• Evidence coverage ≥ 90% for affected outputs.  
+• Observability in place; SLOs not regressing.  
+• Docs updated (CHANGELOG + ADR if regulation).  
+• Feature-flagged & both MCP + non-MCP surfaces working.
+
+Rollback Recipe
+• Revert rule-pack/version or logic file changes.  
+• Disable feature flag.  
+• Replay closed months with prior pack → verify byte-identity.
+
+──────────────────────────────────────────────────────────────────────────────
+
+11) Surfaces & Protocols
+
+MCP:  
+• /mcp/manifest — tools/inputs/outputs; versioned.  
+• /mcp/search (POST) — NL → logic selection/plan.  
+• /mcp/fetch (POST/SSE) — execute plan; stream progress.
+
+Non-MCP (first-class):  
+• /api/execute (JSON), /graphql, /webhooks, /sse, /cli.  
+• Same output contract & evidence guarantees.
+
+Minimal OpenAPI Snippet (/api/execute)
+paths:
+  /api/execute:
+    post:
+      summary: Execute a logic or orchestrated plan
+      requestBody: { content: { application/json: { schema: { $ref: "#/components/schemas/ExecuteRequest" }}}}
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ExecuteResponse" }}}}
+
+GraphQL Sketch
+type Query {
+  execute(plan: ExecutePlanInput!): ExecuteResult!
+}
+
+──────────────────────────────────────────────────────────────────────────────
+
+12) Master Logic Index (Authoritative, Growing)
+
+Implementation rule: One file per logic in /logics/ named logic_###_snake_case.py.  
+Categories: Static • Dynamic(Regulation) • Dynamic(Patterns) • Dynamic(Growth) • Dynamic(Behavior).  
+Note: Same 1–200 set as V2, plus 201–230 “Regulatory OS & Evidence Intelligence”. IDs and names are unchanged to preserve backward compatibility.
+
+✅ 1–102 Original Business Logic Modules (unchanged IDs)
 1. Profit and Loss Summary
 2. Balance Sheet
 3. Trial Balance
@@ -161,8 +393,8 @@ The following list is authoritative and will continue to grow.
 13. Creditor Ageing Buckets
 14. Invoice Status
 15. Bill Status
-16. GSTR Filing Status
-17. TDS Filing Status
+16. GSTR Filing Status (Regulation)
+17. TDS Filing Status (Regulation)
 18. Highest Selling Items
 19. Highest Revenue Clients
 20. Client-wise Profitability
@@ -184,9 +416,9 @@ The following list is authoritative and will continue to grow.
 36. Month-on-Month Comparison
 37. Project-wise Profitability
 38. Vendor-wise Spend
-39. Tax Summary Report
-40. GST Reconciliation Status
-41. TDS Deducted vs Paid
+39. Tax Summary Report (Regulation)
+40. GST Reconciliation Status (Regulation)
+41. TDS Deducted vs Paid (Regulation)
 42. Credit Utilization Percentage
 43. Sales Conversion Ratio
 44. Revenue Forecast
@@ -220,39 +452,36 @@ The following list is authoritative and will continue to grow.
 72. Internal Audit Checklist
 73. Compliance Tracker
 74. Audit Trail Summary
-75. Error Detection Engine
-76. Anomaly Detection Report
+75. Error Detection Engine (Patterns)
+76. Anomaly Detection Report (Patterns)
 77. Vendor Duplication Check
 78. Client Duplication Check
 79. Data Entry Consistency
 80. Duplicate Invoice Detection
 81. Outlier Expenses Detection
 82. Salary vs Market Benchmark
-83. Tax Liability Estimator
-84. Input Tax Credit Reconciliation
-85. Late Filing Penalty Tracker
+83. Tax Liability Estimator (Regulation)
+84. Input Tax Credit Reconciliation (Regulation)
+85. Late Filing Penalty Tracker (Regulation)
 86. Missed Payment Tracker
 87. Recurring Expenses Monitor
-88. Profit Leakage Detector
+88. Profit Leakage Detector (Patterns)
 89. Unbilled Revenue Tracker
 90. Advance Received Adjustment
 91. Advance Paid Adjustment
-92. Suspense Account Monitor
-93. Accounting Hygiene Score
-94. Business Health Score
-95. Scenario Simulation Engine
-96. Expense Optimization Engine
-97. Credit Rating Estimator
-98. Business Valuation Estimator
-99. Dividend Recommendation Engine
-100. Risk Assessment Matrix
-101. Cash Reserve Advisor
-102. Strategic Suggestion Engine
+92. Suspense Account Monitor (Patterns)
+93. Accounting Hygiene Score (Patterns)
+94. Business Health Score (Patterns)
+95. Scenario Simulation Engine (Growth)
+96. Expense Optimization Engine (Patterns/Growth)
+97. Credit Rating Estimator (Growth)
+98. Business Valuation Estimator (Growth)
+99. Dividend Recommendation Engine (Growth)
+100. Risk Assessment Matrix (Growth)
+101. Cash Reserve Advisor (Growth)
+102. Strategic Suggestion Engine (Behavior)
 
----
-
-## ➕ New Logics for Advanced Auditing + AI Intelligence
-
+➕ 103–150 Advanced Intelligence & Ops (unchanged IDs)
 103. Auto Reconciliation Suggestion
 104. Fabrication vs Billing Variance
 105. BOQ vs Actual Cost
@@ -262,7 +491,7 @@ The following list is authoritative and will continue to grow.
 109. Pending Approvals Summary
 110. Backdated Entry Detector
 111. Late Vendor Payment Penalty Alert
-112. Margin Pressure Tracker (Cost ↑ vs Price ↔)
+112. Margin Pressure Tracker (Cost↑ vs Price↔)
 113. Contract Breach Detection
 114. Client Risk Profiling
 115. Invoice Bounce Predictor
@@ -275,50 +504,48 @@ The following list is authoritative and will continue to grow.
 122. Round-off Abuse Detector
 123. Loan Covenant Breach Alert
 124. Expense Inflation Flag (Employee-wise)
-125. Inventory Shrinkage Alert
-## L-126–L-145 Inventory/Production/Fleet (Deep Spec)
-126. Inventory Turnover Ratio
-127. Stockout Frequency Alert
-128. Excess Inventory Analysis
-129. Demand Forecast Accuracy (MAPE)
-130. Order Fulfillment Cycle Time
-131. Supplier Lead Time Variability
-132. Production Capacity Utilization
-133. Production Downtime Analysis
-134. Scrap Rate Monitor
-135. Machine Efficiency Tracker (OEE)
-136. Batch Yield Analysis
-137. Quality Defect Rate
-138. Return Rate Analysis
-139. Warranty Claims Monitor
-140. Customer Order Accuracy
-141. On-time Delivery Rate
-142. Transportation Cost Analysis
-143. Fleet Utilization Rate
-144. Fuel Consumption Tracker
-145. Route Optimization Alerts
-146. Zone-wise Carbon Score
-147. Green Vendor Scorecard
-148. Data Redundancy Detector
-149. Audit Flag Generator (AI Marked High Risk Areas)
-150. CA Review Ready Index
+125. Inventory Turnover Ratio
+126. Stockout Frequency Alert
+127. Excess Inventory Analysis
+128. Demand Forecast Accuracy (MAPE)
+129. Order Fulfillment Cycle Time
+130. Supplier Lead Time Variability
+131. Production Capacity Utilization
+132. Production Downtime Analysis
+133. Scrap Rate Monitor
+134. Machine Efficiency Tracker (OEE)
+135. Batch Yield Analysis
+136. Quality Defect Rate
+137. Return Rate Analysis
+138. Warranty Claims Monitor
+139. Customer Order Accuracy
+140. On-time Delivery Rate
+141. Transportation Cost Analysis
+142. Fleet Utilization Rate
+143. Fuel Consumption Tracker
+144. Route Optimization Alerts
+145. Zone-wise Carbon Score
+146. Green Vendor Scorecard
+147. Data Redundancy Detector
+148. Audit Flag Generator (AI High-Risk Areas)
+149. CA Review Ready Index
+150. Industry Benchmark Comparison Report
 
-## 💡 Expandable Future Logics (for SaaS-level maturity)
-
-151. Audit Automation Wizard (Step-by-step walkthrough)
-152. Auto-Fill for Common Journal Entries (AI trained on history)
+💡 151–180 SaaS-Level Maturity & UX (unchanged IDs)
+151. Audit Automation Wizard
+152. Auto-Fill for Common JEs
 153. Period Lock & Unlock Tracker
-154. Custom Rule Builder (for clients using SaaS version)
+154. Custom Rule Builder
 155. CFO Dashboard Generator
 156. Financial KPI Designer
-157. Self-learning Prediction Engine (for revenue/expense)
+157. Self-learning Prediction Engine (Rev/Exp)
 158. Multi-company Consolidation Reports
 159. Alerts via Telegram/Slack/Email/WhatsApp
-160. Custom User Access Logs and Abuse Detection
-161. File Upload to Entry Mapper (e.g., Invoice PDF → JE)
-162. Voice-to-Entry (convert spoken input to journal)
+160. User Access Logs & Abuse Detection
+161. File Upload → Entry Mapper (Invoice PDF → JE)
+162. Voice-to-Entry
 163. Advanced Filing Calendar Sync (GST, ROC, TDS)
-164. API-based Third Party Integration Framework
+164. API-based Third-Party Integration Framework
 165. Bank Feed Intelligence Layer
 166. Year-end Closure Guide
 167. Investment vs Working Capital Allocator
@@ -326,126 +553,274 @@ The following list is authoritative and will continue to grow.
 169. Cross-company Loan Tracker
 170. Government Scheme Utilization Tracker
 171. Legal Case Cost Monitor
-172. Automation of Monthly Compliance Summary
-173. DSCR and ICR Calculators for Banking
-174. Auto CA Remarks Based on Reports
-175. User Behavior Based Module Suggestions
-176. Scoring System for Business Maturity Level
-177. CA Review Collaboration Toolkit
-178. AI-Powered Explanation Tool (Explain balance sheet in plain Hindi)
-179. Journal Trace Visualizer (graph view of entry relationships)
+172. Automated Monthly Compliance Summary
+173. DSCR and ICR Calculators
+174. Auto CA Remarks on Reports
+175. User-Behavior-Based Module Suggestions
+176. Business Maturity Scoring
+177. CA Collaboration Toolkit
+178. AI-Powered Explanation (Multilingual)
+179. Journal Trace Visualizer (graph)
 180. Interlinked Report Mapper
 
-## L-181–L-200 Advanced Auditing + AI (Moved from 126–145)
-181. Transaction Volume Spike Alert (moved from 126)
-182. Overdue TDS Deduction Cases (moved from 127)
-183. Related Party Transaction Tracker (moved from 128)
-184. Vendor Contract Expiry Alert (moved from 129)
-185. Unverified GSTIN Alert (moved from 130)
-186. HSN-SAC Mapping Auditor (moved from 131)
-187. AI Error Suggestion Engine (moved from 132)
-188. Report Consistency Verifier (across months) (moved from 133)
-189. Audit-Ready Report Generator (moved from 134)
-190. Internal Control Weakness Identifier (moved from 135)
-191. Monthly Report Completeness Checker (moved from 136)
-192. Suggested Journal Entry Fixes (moved from 137)
-193. Pending JE Approvals (moved from 138)
-194. Partial Payments Tracker (moved from 139)
-195. Reverse Charge Monitor (GST) (moved from 140)
-196. P&L Ratio Anomaly Finder (moved from 141)
-197. Mismatch in Payment vs Invoice Timeline (moved from 142)
-198. Free Resource Usage Estimator (Power, Tools, etc.) (moved from 143)
-199. Industry Benchmark Comparison Report (moved from 144)
-200. Vendor-side Carbon Emissions Estimator (moved from 145)
+🧭 181–200 Advanced Auditing & Control (unchanged IDs)
+181. Transaction Volume Spike Alert
+182. Overdue TDS Deduction Cases
+183. Related Party Transaction Tracker
+184. Vendor Contract Expiry Alert
+185. Unverified GSTIN Alert
+186. HSN-SAC Mapping Auditor
+187. AI Error Suggestion Engine
+188. Report Consistency Verifier (across months)
+189. Audit-Ready Report Bundle
+190. Internal Control Weakness Identifier
+191. Monthly Report Completeness Checker
+192. Suggested Journal Entry Fixes
+193. Pending JE Approvals
+194. Partial Payments Tracker
+195. Reverse Charge Monitor (GST)
+196. P&L Ratio Anomaly Finder
+197. Payment vs Invoice Timeline Mismatch
+198. Free Resource Usage Estimator
+199. Industry Benchmark Comparator
+200. Vendor-side Carbon Emissions Estimator
 
----
+🚀 201–230 Regulatory OS & Evidence Intelligence (unchanged IDs)
+201. Regulatory Watcher — CBIC Circulars (GST)
+202. Regulatory Watcher — CBDT Circulars/Notifications (ITD)
+203. Regulatory Watcher — GSTN/IRP Schema Changes
+204. Regulatory Watcher — E-Way Bill API Changes
+205. API Setu Subscription Manager (PAN/KYC)
+206. GSTR-1 ↔ Books Reconciliation (line-level)
+207. GSTR-2B ITC ↔ Books (aging/eligibility)
+208. E-Invoice ↔ Sales Register Consistency
+209. E-Way Bill ↔ Delivery/Inventory Movement Match
+210. 26AS ↔ Books TDS Map (payer/payee/sections)
+211. AIS/TIS Mapper (to ledgers, with confidence)
+212. Cross-Company Related-Party Detector (MCA + Books)
+213. AA Bank Statement ↔ Books Reconciliation
+214. Effective-Date Rule Evaluator (multi-period recompute)
+215. Evidence Coverage Scorer
+216. Consent Compliance Auditor (scope/expiry)
+217. Filing Calendar Synthesizer (auto-updated from circulars)
+218. Regulatory Impact Simulator (what-if)
+219. Audit Bundle Generator (rules + evidence + outputs)
+220. Enforcement Guard (fail-closed on invalid pack)
+221. Supplier Risk Heatmap (GSTR + performance + disputes)
+222. ITC Eligibility Classifier (rule-based + evidence)
+223. TDS Section Classifier (deterministic with proofs)
+224. Inventory to E-Way Reconciliation Gaps
+225. E-Invoice Cancellation/Amendment Auditor
+226. Bank-to-Revenue Corroboration (AA + invoices)
+227. GSTIN-PAN Consistency Checker (API Setu)
+228. Ledger Drift Detector (books vs filings)
+229. Evidence Freshness Monitor
+230. Regulatory Delta Explainer
 
-## 💡 Expandable Future Logics (for SaaS-level maturity)
+Logic Category Annotations
+• Static — Core accounting/reporting. Rare functional changes; improvements focus on performance/clarity.  
+• Dynamic (Regulation) — Changes with laws; governed by Rule Packs + effective-date logic.  
+• Dynamic (Patterns) — Evolves with anomalies/history; thresholds adapt via statistics (p95/p99).  
+• Dynamic (Growth) — Expands features/integrations; backward-compatible outputs.  
+• Dynamic (Behavior) — Learns formats and reproduces them with provenance.
 
-151. Audit Automation Wizard (Step-by-step walkthrough)
-152. Auto-Fill for Common Journal Entries (AI trained on history)
-153. Period Lock & Unlock Tracker
-154. Custom Rule Builder (for clients using SaaS version)
-155. CFO Dashboard Generator
-156. Financial KPI Designer
-157. Self-learning Prediction Engine (for revenue/expense)
-158. Multi-company Consolidation Reports
-159. Alerts via Telegram/Slack/Email/WhatsApp
-160. Custom User Access Logs and Abuse Detection
-161. File Upload to Entry Mapper (e.g., Invoice PDF → JE)
-162. Voice-to-Entry (convert spoken input to journal)
-163. Advanced Filing Calendar Sync (GST, ROC, TDS)
-164. API-based Third Party Integration Framework
-165. Bank Feed Intelligence Layer
-166. Year-end Closure Guide
-167. Investment vs Working Capital Allocator
-168. Performance Linked Pay Analyzer
-169. Cross-company Loan Tracker
-170. Government Scheme Utilization Tracker
-171. Legal Case Cost Monitor
-172. Automation of Monthly Compliance Summary
-173. DSCR and ICR Calculators for Banking
-174. Auto CA Remarks Based on Reports
-175. User Behavior Based Module Suggestions
-176. Scoring System for Business Maturity Level
-177. CA Review Collaboration Toolkit
-178. AI-Powered Explanation Tool (Explain balance sheet in plain Hindi)
-179. Journal Trace Visualizer (graph view of entry relationships)
-180. Interlinked Report Mapper
+──────────────────────────────────────────────────────────────────────────────
 
----
+13) DevEx & CI/CD
 
-✅ Total Logics So Far: **200 and expanding**
+• One-Command Dev: `just dev` (or Make) spins API + hot reload + test watch + local dashboards.  
+• Pre-Commit: Format (black/ruff), type (mypy), security (bandit), licenses (pip-licenses), SBOM (syft).  
+• CI Stages: lint → unit → integration → golden → contract → security → build → e2e smoke → canary.  
+• Feature Flags: /helpers/feature_flags.py; flags are required for risk-bearing changes.  
+• Versioning: SemVer per logic and per rule-pack; CHANGELOG enforced by CI.
 
-This list is modular, meaning you can:
-- Create `logics/logic_001_profit_loss.py` → `logic_200_vendor_side_carbon_emissions_estimator.py`
-- Each file contains 1 `handle(query)` or similar
-- All are auto-registered via your loader in `main.py` for `/mcp/fetch` or API
+──────────────────────────────────────────────────────────────────────────────
 
----
+14) Cost & Performance Guardrails
 
-### 📑 Logic Category Annotations (Static vs Dynamic)
+• Deterministic caches (keyed by inputs + pack versions + period).  
+• Budget files per logic (`/observability/budgets.yaml`) define p95/p99 & CPU/mem caps.  
+• “Fail-open advisory, fail-closed authoritative”: When dependencies wobble, advisory narratives may continue; authoritative numbers pause with clear alerts.
 
-**Purpose:** This table classifies each logic in the Master Logic Index according to its nature and how it should evolve.
+──────────────────────────────────────────────────────────────────────────────
 
-- **Static** = Core accounting/reporting functions. Logic rarely changes unless optimized or improved for performance/readability.
-- **Dynamic (Regulation)** = Changes automatically when laws or compliance rules change (e.g., ITD/GST/TDS).
-- **Dynamic (Patterns)** = Evolves based on anomaly detection, historical data drift, or detected irregularities.
-- **Dynamic (Growth)** = Expands with business growth, new operational features, or SaaS-level enhancements.
-- **Dynamic (Behavior)** = Learns from user requests, usage patterns, and reverse-learning of new formats.
+15) Migration Map (V1/V2 → V4)
 
-| #   | Logic Name | Category | Rationale |
-|-----|------------|----------|-----------|
-| 1   | Profit and Loss Summary | Static | Canonical accounting statement |
-| 2   | Balance Sheet | Static | Standard financial statement |
-| 3   | Trial Balance | Static | Core ledger validation report |
-| 4   | Capital Account Summary | Static | Standard capital tracking |
-| 5   | Partner Withdrawals | Static | Deterministic calculation |
-| 6   | Zone-wise Expenses | Static | Simple aggregation |
-| 16  | GSTR Filing Status | Dynamic (Regulation) | Bound to GST compliance rules |
-| 17  | TDS Filing Status | Dynamic (Regulation) | Bound to TDS law changes |
-| 39  | Tax Summary Report | Dynamic (Regulation) | Updates when tax rates change |
-| 40  | GST Reconciliation Status | Dynamic (Regulation) | Follows GSTN format changes |
-| 41  | TDS Deducted vs Paid | Dynamic (Regulation) | Updates with TDS thresholds |
-| 75  | Error Detection Engine | Dynamic (Patterns) | Evolves with anomaly heuristics |
-| 76  | Anomaly Detection Report | Dynamic (Patterns) | Learns from history_store |
-| 83  | Tax Liability Estimator | Dynamic (Regulation) | Adapts to ITD circulars |
-| 85  | Late Filing Penalty Tracker | Dynamic (Regulation) | Follows compliance timelines |
-| 88  | Profit Leakage Detector | Dynamic (Patterns) | Learns from repeated leaks |
-| 92  | Suspense Account Monitor | Dynamic (Patterns) | Flags unusual journal entries |
-| 93  | Accounting Hygiene Score | Dynamic (Patterns) | Scoring changes with usage |
-| 95  | Scenario Simulation Engine | Dynamic (Growth) | Expands with new scenario types |
-| 97  | Credit Rating Estimator | Dynamic (Growth) | Grows with more parameters |
-| 151 | Audit Automation Wizard | Dynamic (Behavior) | Learns new audit steps |
-| 161 | File Upload to Entry Mapper | Dynamic (Behavior) | Adapts to new file formats |
-| 174 | Auto CA Remarks Based on Reports | Dynamic (Behavior) | Expands commentary with use |
-| 178 | AI-Powered Explanation Tool | Dynamic (Behavior) | Learns to explain new terms |
-| 179 | Journal Trace Visualizer | Dynamic (Behavior) | Expands with new trace types |
-| 180 | Interlinked Report Mapper | Dynamic (Behavior) | Grows with linked report types |
+Phase 0 (No Breaking Changes)
+0. Keep existing logic IDs/names; add evidence handles to outputs (no behavior change).  
+1. Introduce /evidence/, wire `attach_evidence()` in top 10 logics (P&L, ITC, TDS, GST recos).  
+2. Add /regulatory_os/ with initial `gst@2025-08` + golden tests (reproduce last closed month).
 
-_Note:_ All Dynamic logics follow L4 rules: they can self-learn, update rulesets, or spawn new stubs when triggered by relevant events.
+Phase 1 (Determinism & Packs)
+3. Route regulatory logics (16,17,39–41,84,85,195) through `run_rule_pack()`.  
+4. Add `/observability/` dashboards + SLO alerts; wire runtime/error metrics for top logics.  
+5. Implement /api/execute (non-MCP) mirroring MCP outputs.
 
----
+Phase 2 (Coverage & Orchestration)
+6. MIS orchestrator attaches `applied_rule_set` and completeness scores.  
+7. Evidence coverage ≥90% on MIS sections; byte-identical recompute for last closed month.
 
-## 9) Acceptance & Next Step (single step at a time)
-**Step‑1 for approval:** Confirm the **module contract** (Section 2) and the **naming scheme** (`logic_###_name.py`).  
+Phase 3 (Watchers & Impact)
+8. Enable watchers for CBIC/CBDT/GSTN → automated PRs with pack deltas.  
+9. Regulatory Impact Simulator for “what-if” before enforcement.
+
+Exit Criteria  
+• All above green; CI/CD gates (goldens, SBOM, security) enforced; feature flags removed for stabilized paths.
+
+──────────────────────────────────────────────────────────────────────────────
+
+16) Acceptance Criteria (Definition of “Won”)
+
+• Evidence Coverage ≥ 90% for MIS/P&L sections (each figure has provenance).  
+• Determinism: Recompute closed month → byte-identical outputs.  
+• Zero untested rule merges: Rule-pack PRs require passing historical goldens.  
+• Connector Freshness SLOs: e.g., GSTR-2B ≤ 24h; 26AS on user trigger.  
+• Narratives on demand: “Explain this variance” linked to rules + evidence.  
+• Security: No PII in logs; consent enforced; SBOM published; high/critical vulns = block.  
+• Observability: SLO dashboards live; MWMBR alerts firing correctly; runbooks complete.  
+• Surfaces: MCP + /api/execute + /graphql parity on contracts/evidence.
+
+──────────────────────────────────────────────────────────────────────────────
+
+Appendix A — Minimal Logic Skeleton (copy-paste)
+
+# file: logics/logic_001_profit_loss.py
+"""
+Title: Profit and Loss Summary
+ID: L-001
+Tags: ["mis","pnl"]
+Category: Static
+Required Inputs: {"period": "YYYY-MM", "org_id": "string"}
+Outputs: {"totals": {...}, "sections": {...}}
+Assumptions: Period is closed for authoritative mode.
+Evidence: invoices, bills, journals, adjustments
+Evolution Notes: Add client/segment breakdown strategies; caching by period+org
+"""
+from typing import Any, Dict
+from helpers.schema_registry import validate_payload
+from helpers.history_store import write_event
+from helpers.rules_engine import validate_accounting
+from helpers.learning_hooks import record_feedback, score_confidence
+from evidence.ledger import attach_evidence
+from helpers.cache import cache_get, cache_set
+from helpers.zoho_client import fetch_pnl_primitives
+
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    validate_payload("L-001", payload)
+    cache_key = ("L-001", payload["org_id"], payload["period"])
+    if cached := cache_get(cache_key):
+        return cached
+
+    data = fetch_pnl_primitives(org_id=payload["org_id"], period=payload["period"])
+    # Deterministic core (example aggregation)
+    totals = {
+        "revenue": sum(i["amount"] for i in data["sales"]),
+        "cogs": sum(i["amount"] for i in data["cogs"]),
+    }
+    totals["gross_profit"] = totals["revenue"] - totals["cogs"]
+    totals["opex"] = sum(i["amount"] for i in data["opex"])
+    totals["ebit"] = totals["gross_profit"] - totals["opex"]
+
+    alerts = validate_accounting({"totals": totals})
+    provenance = attach_evidence({"totals": totals}, sources=data)
+
+    out = {
+        "result": {"totals": totals, "sections": {}},
+        "provenance": provenance,
+        "confidence": score_confidence({"totals": totals}, alerts=alerts),
+        "alerts": alerts,
+        "applied_rule_set": {"packs": {}, "effective_date_window": None}
+    }
+    write_event(logic="L-001", inputs=payload, outputs=out["result"], provenance=provenance)
+    cache_set(cache_key, out, ttl_seconds=6*3600)
+    record_feedback("L-001", context=payload, outputs=out["result"])
+    return out
+
+──────────────────────────────────────────────────────────────────────────────
+
+Appendix B — MIS Orchestrator Skeleton
+
+# file: orchestrators/mis_orchestrator.py
+from typing import Dict, Any, List
+from helpers.feature_flags import is_enabled
+from helpers.history_store import write_event
+
+LOGIC_ORDER = [
+  "logic_001_profit_loss",
+  "logic_084_input_tax_credit_reconciliation",
+  "logic_040_gst_reconciliation_status",
+  # ... add 2→∞ logics
+]
+
+def execute(payload: Dict[str, Any]) -> Dict[str, Any]:
+    sections, alerts, packs = {}, [], {}
+    completeness = 0.0
+    ran = 0
+
+    for logic in LOGIC_ORDER:
+        if not is_enabled(logic, org_id=payload["org_id"]): continue
+        try:
+            mod = __import__(f"logics.{logic}", fromlist=["handle"])
+            out = mod.handle(payload)
+            sections[logic] = out
+            alerts.extend(out.get("alerts", []))
+            for k,v in out.get("applied_rule_set", {}).get("packs", {}).items():
+                packs[k] = v
+            ran += 1
+        except Exception as e:
+            alerts.append({"code":"ORCH_EXEC_FAIL","severity":"warn","message":str(e),"evidence":[]})
+
+    completeness = ran / max(1, len(LOGIC_ORDER))
+    result = {
+      "sections": sections,
+      "alerts": alerts,
+      "completeness": round(completeness, 3),
+      "applied_rule_set": {"packs": packs}
+    }
+    write_event(logic="ORCH_MIS", inputs=payload, outputs=result, provenance={})
+    return result
+
+──────────────────────────────────────────────────────────────────────────────
+
+Appendix C — /mcp/* Contracts (sketch)
+
+POST /mcp/search
+Request: { "query": "mis for 2025-07 formation", "org_id":"...", "period":"2025-07" }
+Response: { "plan": [{"logic":"mis_orchestrator","inputs":{"org_id":"...","period":"2025-07"}}] }
+
+POST /mcp/fetch (SSE if stream=true)
+Request: { "plan":[...], "stream": true }
+Event Stream: progress %, section results, final JSON identical to /api/execute
+
+──────────────────────────────────────────────────────────────────────────────
+
+Appendix D — Golden Test Pattern (Regulatory)
+
+# tests/golden/test_gst_pack_2025_08.py
+def test_gst_pack_reproduces_closed_month():
+    inputs = load("fixtures/gst_2025_08_inputs.json")
+    expected = load("fixtures/gst_2025_08_expected.json")  # from historic filing
+    result, packs = run_rule_pack("gst@2025-08", inputs)
+    assert result == expected
+    assert packs["gst"] == "gst@2025-08"
+
+──────────────────────────────────────────────────────────────────────────────
+
+Appendix E — PR Checklist (copy-paste into PR body)
+
+- [ ] Category set: static | regulation | patterns | growth | behavior  
+- [ ] Deterministic core updated; DSL/Rule-pack if regulation  
+- [ ] Evidence coverage ≥ 90% (attach merkle root/hash)  
+- [ ] Unit + Integration + Golden + Contract tests PASS  
+- [ ] Metrics & alerts updated; runbooks unchanged or updated  
+- [ ] Feature flag path documented; rollback recipe included  
+- [ ] Data residency/PII considerations documented
+
+──────────────────────────────────────────────────────────────────────────────
+
+Next Step (Single-Step Approval Gate)
+
+Step-1: Approve the module contract & naming scheme (`logic_###_snake_case.py`) and the Evidence OS requirement.  
+Once approved, proceed to Migration Phase 0 (Appendix “Migration Map”) without changing behavior: add evidence handles to the top 10 logics.
+
+Author: Hardy • Last Updated: 2025-08-15

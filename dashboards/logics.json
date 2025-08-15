@@ -1,0 +1,350 @@
+{
+  "dashboard": {
+    "title": "Logics Dashboard",
+    "description": "Per-logic performance monitoring, error tracking, confidence scoring, and alert management",
+    "version": "1.0",
+    "refresh_interval": "30s",
+    "time_range": "1h",
+    "panels": [
+      {
+        "id": "logic_execution_summary",
+        "title": "Logic Execution Summary",
+        "type": "stat",
+        "position": {"x": 0, "y": 0, "w": 12, "h": 4},
+        "targets": [
+          {
+            "query": "sli_logic_total_count",
+            "legend": "Total Executions",
+            "format": "number"
+          },
+          {
+            "query": "sli_logic_success_count",
+            "legend": "Successful Executions",
+            "format": "number"
+          },
+          {
+            "query": "sli_logic_error_count",
+            "legend": "Failed Executions",
+            "format": "number"
+          },
+          {
+            "query": "sli_logic_confidence_avg",
+            "legend": "Avg Confidence",
+            "format": "percent"
+          }
+        ],
+        "thresholds": [
+          {"color": "green", "value": null},
+          {"color": "yellow", "value": 10},
+          {"color": "red", "value": 50}
+        ]
+      },
+      {
+        "id": "logic_latency_distribution",
+        "title": "Logic Latency Distribution",
+        "type": "heatmap",
+        "position": {"x": 0, "y": 4, "w": 8, "h": 6},
+        "targets": [
+          {
+            "query": "sli_logic_latency_ms_bucket",
+            "legend": "Latency Distribution",
+            "format": "heatmap"
+          }
+        ],
+        "options": {
+          "calculate": true,
+          "calculation": "last",
+          "cellGap": 1,
+          "hideZeroOverrides": true,
+          "legend": {
+            "show": true
+          }
+        },
+        "y_axis": {
+          "label": "Logic ID",
+          "unit": "short"
+        },
+        "x_axis": {
+          "label": "Latency (ms)",
+          "unit": "ms"
+        }
+      },
+      {
+        "id": "logic_error_rate_trend",
+        "title": "Logic Error Rate Trend",
+        "type": "timeseries",
+        "position": {"x": 8, "y": 4, "w": 4, "h": 6},
+        "targets": [
+          {
+            "query": "sli_logic_error_rate",
+            "legend": "Error Rate",
+            "format": "percent"
+          }
+        ],
+        "thresholds": [
+          {"color": "green", "value": null},
+          {"color": "yellow", "value": 1.0},
+          {"color": "red", "value": 5.0}
+        ],
+        "y_axis": {
+          "label": "Error Rate (%)",
+          "min": 0,
+          "max": 10
+        }
+      },
+      {
+        "id": "logic_confidence_scores",
+        "title": "Logic Confidence Scores",
+        "type": "timeseries",
+        "position": {"x": 0, "y": 10, "w": 6, "h": 6},
+        "targets": [
+          {
+            "query": "sli_logic_confidence_p50",
+            "legend": "P50 Confidence",
+            "format": "percent"
+          },
+          {
+            "query": "sli_logic_confidence_p95",
+            "legend": "P95 Confidence",
+            "format": "percent"
+          },
+          {
+            "query": "sli_logic_confidence_p99",
+            "legend": "P99 Confidence",
+            "format": "percent"
+          }
+        ],
+        "thresholds": [
+          {"color": "red", "value": null},
+          {"color": "yellow", "value": 70},
+          {"color": "green", "value": 90}
+        ],
+        "y_axis": {
+          "label": "Confidence (%)",
+          "min": 0,
+          "max": 100
+        }
+      },
+      {
+        "id": "logic_alert_summary",
+        "title": "Logic Alert Summary",
+        "type": "stat",
+        "position": {"x": 6, "y": 10, "w": 6, "h": 6},
+        "targets": [
+          {
+            "query": "sli_logic_alerts_info",
+            "legend": "Info Alerts",
+            "format": "number"
+          },
+          {
+            "query": "sli_logic_alerts_warning",
+            "legend": "Warning Alerts",
+            "format": "number"
+          },
+          {
+            "query": "sli_logic_alerts_critical",
+            "legend": "Critical Alerts",
+            "format": "number"
+          },
+          {
+            "query": "sli_logic_anomalies",
+            "legend": "Anomalies Detected",
+            "format": "number"
+          }
+        ],
+        "thresholds": [
+          {"color": "green", "value": null},
+          {"color": "yellow", "value": 5},
+          {"color": "red", "value": 20}
+        ]
+      },
+      {
+        "id": "top_performing_logics",
+        "title": "Top Performing Logics",
+        "type": "table",
+        "position": {"x": 0, "y": 16, "w": 6, "h": 8},
+        "targets": [
+          {
+            "query": "sli_logic_performance_top",
+            "columns": [
+              {"text": "Logic ID", "field": "logic_id"},
+              {"text": "Name", "field": "logic_name"},
+              {"text": "Success Rate (%)", "field": "success_rate"},
+              {"text": "Avg Latency (ms)", "field": "avg_latency"},
+              {"text": "Avg Confidence", "field": "avg_confidence"},
+              {"text": "Executions", "field": "execution_count"}
+            ]
+          }
+        ],
+        "transformations": [
+          {
+            "type": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {}
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "Success Rate (%)"
+            }
+          ]
+        }
+      },
+      {
+        "id": "problematic_logics",
+        "title": "Problematic Logics",
+        "type": "table",
+        "position": {"x": 6, "y": 16, "w": 6, "h": 8},
+        "targets": [
+          {
+            "query": "sli_logic_performance_bottom",
+            "columns": [
+              {"text": "Logic ID", "field": "logic_id"},
+              {"text": "Name", "field": "logic_name"},
+              {"text": "Error Rate (%)", "field": "error_rate"},
+              {"text": "Avg Latency (ms)", "field": "avg_latency"},
+              {"text": "Avg Confidence", "field": "avg_confidence"},
+              {"text": "Alerts", "field": "alert_count"}
+            ]
+          }
+        ],
+        "transformations": [
+          {
+            "type": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {}
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "Error Rate (%)"
+            }
+          ]
+        }
+      },
+      {
+        "id": "logic_category_performance",
+        "title": "Logic Category Performance",
+        "type": "piechart",
+        "position": {"x": 0, "y": 24, "w": 6, "h": 6},
+        "targets": [
+          {
+            "query": "sli_logic_category_success_rate",
+            "legend": "Success Rate by Category",
+            "format": "percent"
+          }
+        ],
+        "options": {
+          "showLegend": true,
+          "showValues": true,
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          }
+        }
+      },
+      {
+        "id": "logic_usage_trends",
+        "title": "Logic Usage Trends",
+        "type": "timeseries",
+        "position": {"x": 6, "y": 24, "w": 6, "h": 6},
+        "targets": [
+          {
+            "query": "sli_logic_executions_per_minute",
+            "legend": "Executions/min",
+            "format": "number"
+          },
+          {
+            "query": "sli_logic_unique_users",
+            "legend": "Unique Users",
+            "format": "number"
+          }
+        ],
+        "y_axis": {
+          "label": "Count",
+          "min": 0
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "logic_id",
+          "type": "query",
+          "query": "sli_logic_ids",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "logic_category",
+          "type": "query",
+          "query": "sli_logic_categories",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "org_id",
+          "type": "query",
+          "query": "sli_org_ids",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Logic Deployments",
+          "datasource": "annotations",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "enable": true
+        },
+        {
+          "name": "Logic Alerts",
+          "datasource": "annotations",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "enable": true
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Runbooks",
+        "url": "/docs/runbooks/",
+        "targetBlank": true
+      },
+      {
+        "title": "Logic Documentation",
+        "url": "/docs/logics/",
+        "targetBlank": true
+      },
+      {
+        "title": "Logic Tests",
+        "url": "/tests/unit/logic_",
+        "targetBlank": true
+      },
+      {
+        "title": "Logic Logs",
+        "url": "/logs/logics",
+        "targetBlank": true
+      }
+    ]
+  }
+}

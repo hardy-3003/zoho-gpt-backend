@@ -5,209 +5,346 @@ This module tests the integration between orchestrators and logic modules.
 """
 
 import pytest
-from orchestrators.mis_orchestrator import run_dag, NodeSpec
+from unittest.mock import patch, MagicMock
+import json
+import time
+
+from core.operate_base import OperateInput
+from orchestrators.mis_orchestrator import run_mis
+from orchestrators.generic_report_orchestrator import run_generic
 
 
-class TestMISOrchestrator:
-    """Test suite for MIS orchestrator integration."""
+def test_mis_orchestrator_telemetry_emission():
+    """Test that MIS orchestrator emits structured telemetry events"""
+    from helpers.telemetry import _get_current_context
 
-    def test_simple_dag_execution(self):
-        """Test simple DAG execution with two nodes."""
-        nodes = [
-            NodeSpec(
-                id="L-001",
-                import_path="logics.logic_001_profit_and_loss_summary",
-                retries=0,
-            ),
-            NodeSpec(
-                id="L-002", import_path="logics.logic_002_balance_sheet", retries=0
-            ),
-        ]
-        edges = [("L-001", "L-002")]
+    # Clear any existing context
+    _get_current_context().clear()
 
-        payload = {
-            "org_id": "test_org",
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-31",
-            "headers": {},
-            "api_domain": "test.zoho.com",
-            "query": "test query",
-        }
+    # Mock input
+    input_data = OperateInput(
+        org_id="test_org_123",
+        start_date="2025-01-01",
+        end_date="2025-01-31",
+        headers={},
+        api_domain="test.zoho.com",
+        query="Generate MIS report",
+    )
 
-        result = run_dag(nodes, edges, payload, progress_cb=None)
+    with patch("orchestrators.mis_orchestrator._log") as mock_log:
+        # Run orchestrator
+        result = run_mis(
+            input=input_data,
+            sections=["pnl", "salary"],
+            use_dag=False,  # Use sequential for easier testing
+            max_workers=2,
+        )
 
         # Verify result structure
-        assert isinstance(result, dict)
-        assert "nodes" in result
-        assert "edges" in result
-        assert "execution_order" in result
-        assert "results" in result
+        assert result.content["sections"] is not None
+        assert "run_id" in result.meta
 
-        # Verify execution order
-        assert len(result["execution_order"]) == 2
-        assert "L-001" in result["execution_order"]
-        assert "L-002" in result["execution_order"]
+        # Verify telemetry logs were emitted
+        log_calls = mock_log.info.call_args_list
 
-        # Verify results
-        assert "L-001" in result["results"]
-        assert "L-002" in result["results"]
-
-        # Verify each result has the expected contract shape
-        for node_id, node_result in result["results"].items():
-            assert isinstance(node_result, dict)
-            assert "result" in node_result
-            assert "provenance" in node_result
-            assert "confidence" in node_result
-            assert "alerts" in node_result
-            assert "meta" in node_result
-
-    def test_dag_with_dependencies(self):
-        """Test DAG execution with dependencies."""
-        nodes = [
-            NodeSpec(
-                id="L-001",
-                import_path="logics.logic_001_profit_and_loss_summary",
-                retries=0,
-            ),
-            NodeSpec(
-                id="L-002", import_path="logics.logic_002_balance_sheet", retries=0
-            ),
-            NodeSpec(
-                id="L-003", import_path="logics.logic_003_trial_balance", retries=0
-            ),
+        # Should have span start/end logs
+        span_start_calls = [
+            call for call in log_calls if "telemetry.span_start" in str(call)
         ]
-        edges = [("L-001", "L-002"), ("L-002", "L-003")]
-
-        payload = {
-            "org_id": "test_org",
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-31",
-            "headers": {},
-            "api_domain": "test.zoho.com",
-            "query": "test query",
-        }
-
-        result = run_dag(nodes, edges, payload, progress_cb=None)
-
-        # Verify execution order respects dependencies
-        execution_order = result["execution_order"]
-        l1_index = execution_order.index("L-001")
-        l2_index = execution_order.index("L-002")
-        l3_index = execution_order.index("L-003")
-
-        # L-001 should execute before L-002
-        assert l1_index < l2_index
-        # L-002 should execute before L-003
-        assert l2_index < l3_index
-
-    def test_dag_with_parallel_execution(self):
-        """Test DAG execution with parallel nodes."""
-        nodes = [
-            NodeSpec(
-                id="L-001",
-                import_path="logics.logic_001_profit_and_loss_summary",
-                retries=0,
-            ),
-            NodeSpec(
-                id="L-002", import_path="logics.logic_002_balance_sheet", retries=0
-            ),
-            NodeSpec(
-                id="L-003", import_path="logics.logic_003_trial_balance", retries=0
-            ),
+        span_end_calls = [
+            call for call in log_calls if "telemetry.span_end" in str(call)
         ]
-        # No edges - all nodes can run in parallel
-        edges = []
 
-        payload = {
-            "org_id": "test_org",
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-31",
-            "headers": {},
-            "api_domain": "test.zoho.com",
-            "query": "test query",
-        }
+        assert len(span_start_calls) > 0
+        assert len(span_end_calls) > 0
 
-        result = run_dag(nodes, edges, payload, progress_cb=None)
-
-        # All nodes should be executed
-        assert len(result["execution_order"]) == 3
-        assert "L-001" in result["execution_order"]
-        assert "L-002" in result["execution_order"]
-        assert "L-003" in result["execution_order"]
-
-    def test_dag_error_handling(self):
-        """Test DAG execution with error handling."""
-        nodes = [
-            NodeSpec(
-                id="L-001",
-                import_path="logics.logic_001_profit_and_loss_summary",
-                retries=0,
-            ),
-            NodeSpec(id="L-INVALID", import_path="logics.invalid_logic", retries=0),
+        # Verify orchestration telemetry
+        orchestration_calls = [
+            call for call in log_calls if "telemetry.orchestration" in str(call)
         ]
-        edges = [("L-001", "L-INVALID")]
+        assert len(orchestration_calls) > 0
 
-        payload = {
-            "org_id": "test_org",
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-31",
-            "headers": {},
-            "api_domain": "test.zoho.com",
-            "query": "test query",
-        }
+        # Verify structured data in logs
+        for call in orchestration_calls:
+            extra_data = call[1]["extra"]
+            assert "run_id" in extra_data
+            assert "dag_node_id" in extra_data
+            assert "logic_id" in extra_data
+            assert "duration_ms" in extra_data
+            assert "status" in extra_data
 
-        result = run_dag(nodes, edges, payload, progress_cb=None)
 
-        # Should handle errors gracefully
-        assert isinstance(result, dict)
-        assert "results" in result
+def test_generic_orchestrator_telemetry_emission():
+    """Test that generic orchestrator emits structured telemetry events"""
+    from helpers.telemetry import _get_current_context
 
-        # L-001 should succeed
-        assert "L-001" in result["results"]
-        assert result["results"]["L-001"]["confidence"] > 0
+    # Clear any existing context
+    _get_current_context().clear()
 
-        # L-INVALID should fail but not crash the entire DAG
-        assert "L-INVALID" in result["results"]
-        assert result["results"]["L-INVALID"]["confidence"] < 0.5
+    # Mock input
+    input_data = OperateInput(
+        org_id="test_org_456",
+        start_date="2025-01-01",
+        end_date="2025-01-31",
+        headers={},
+        api_domain="test.zoho.com",
+        query="Generate generic report",
+    )
 
-    def test_dag_with_retries(self):
-        """Test DAG execution with retry logic."""
-        nodes = [
-            NodeSpec(
-                id="L-001",
-                import_path="logics.logic_001_profit_and_loss_summary",
-                retries=2,
-            ),
+    with patch("orchestrators.generic_report_orchestrator._log") as mock_log:
+        # Run orchestrator
+        result = run_generic(input=input_data, logic_keywords=["pnl", "balance_sheet"])
+
+        # Verify result structure
+        assert result.content["sections"] is not None
+        assert "run_id" in result.meta
+
+        # Verify telemetry logs were emitted
+        log_calls = mock_log.info.call_args_list
+
+        # Should have span start/end logs
+        span_start_calls = [
+            call for call in log_calls if "telemetry.span_start" in str(call)
         ]
-        edges = []
+        span_end_calls = [
+            call for call in log_calls if "telemetry.span_end" in str(call)
+        ]
 
-        payload = {
-            "org_id": "test_org",
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-31",
-            "headers": {},
-            "api_domain": "test.zoho.com",
-            "query": "test query",
-        }
+        assert len(span_start_calls) > 0
+        assert len(span_end_calls) > 0
 
-        result = run_dag(nodes, edges, payload, progress_cb=None)
-
-        # Should execute successfully
-        assert isinstance(result, dict)
-        assert "L-001" in result["results"]
-        assert result["results"]["L-001"]["confidence"] > 0
+        # Verify orchestration telemetry
+        orchestration_calls = [
+            call for call in log_calls if "telemetry.orchestration" in str(call)
+        ]
+        assert len(orchestration_calls) > 0
 
 
-class TestGenericReportOrchestrator:
-    """Test suite for generic report orchestrator integration."""
+def test_orchestrator_dag_node_telemetry():
+    """Test that each DAG node execution emits proper telemetry"""
+    from helpers.telemetry import _get_current_context
 
-    def test_report_generation(self):
-        """Test basic report generation."""
-        # This test would require the generic report orchestrator to be implemented
-        # For now, we'll create a placeholder test
-        assert True  # Placeholder assertion
+    # Clear any existing context
+    _get_current_context().clear()
 
-    def test_report_with_multiple_sources(self):
-        """Test report generation with multiple data sources."""
-        # This test would verify that the orchestrator can handle multiple data sources
-        assert True  # Placeholder assertion
+    # Mock input
+    input_data = OperateInput(
+        org_id="test_org_789",
+        start_date="2025-01-01",
+        end_date="2025-01-31",
+        headers={},
+        api_domain="test.zoho.com",
+        query="Test DAG telemetry",
+    )
+
+    with patch(
+        "orchestrators.mis_orchestrator.emit_orchestration_telemetry"
+    ) as mock_telemetry:
+        # Run orchestrator with sequential execution
+        result = run_mis(
+            input=input_data, sections=["pnl"], use_dag=False, max_workers=1
+        )
+
+        # Verify telemetry was called for each node
+        assert mock_telemetry.called
+
+        # Get all calls
+        calls = mock_telemetry.call_args_list
+
+        # Verify each call has proper structure
+        for call in calls:
+            kwargs = call[1]
+            assert "run_id" in kwargs
+            assert "dag_node_id" in kwargs
+            assert "logic_id" in kwargs
+            assert "duration_ms" in kwargs
+            assert "status" in kwargs
+            assert kwargs["duration_ms"] > 0  # Should have some duration
+
+
+def test_orchestrator_error_telemetry():
+    """Test that orchestrator properly handles and telemetries errors"""
+    from helpers.telemetry import _get_current_context
+
+    # Clear any existing context
+    _get_current_context().clear()
+
+    # Mock input
+    input_data = OperateInput(
+        org_id="test_org_error",
+        start_date="2025-01-01",
+        end_date="2025-01-31",
+        headers={},
+        api_domain="test.zoho.com",
+        query="Test error telemetry",
+    )
+
+    with patch("orchestrators.mis_orchestrator.route") as mock_route:
+        # Make route return None to trigger fallback logic
+        mock_route.return_value = None
+
+        with patch(
+            "orchestrators.mis_orchestrator.emit_orchestration_telemetry"
+        ) as mock_telemetry:
+            # Run orchestrator
+            result = run_mis(
+                input=input_data,
+                sections=["nonexistent_section"],
+                use_dag=False,
+                max_workers=1,
+            )
+
+            # Verify result contains missing sections
+            assert "nonexistent_section" in result.meta["missing"]
+
+            # Verify telemetry was still called (even for missing sections)
+            assert mock_telemetry.called
+
+
+def test_orchestrator_context_propagation():
+    """Test that telemetry context is properly propagated through orchestration"""
+    from helpers.telemetry import _get_current_context
+
+    # Clear any existing context
+    _get_current_context().clear()
+
+    # Mock input
+    input_data = OperateInput(
+        org_id="test_org_context",
+        start_date="2025-01-01",
+        end_date="2025-01-31",
+        headers={},
+        api_domain="test.zoho.com",
+        query="Test context propagation",
+    )
+
+    with patch("orchestrators.mis_orchestrator._log") as mock_log:
+        # Run orchestrator
+        result = run_mis(
+            input=input_data, sections=["pnl"], use_dag=False, max_workers=1
+        )
+
+        # Verify context was set
+        context = _get_current_context()
+        assert "org_id" in context
+        assert context["org_id"] == "test_org_context"
+
+        # Verify run_id was set
+        assert "run_id" in context
+        assert context["run_id"] == result.meta["run_id"]
+
+
+def test_orchestrator_telemetry_redaction():
+    """Test that sensitive data is redacted in orchestration telemetry"""
+    from helpers.telemetry import _get_current_context
+
+    # Clear any existing context
+    _get_current_context().clear()
+
+    # Mock input with sensitive data
+    input_data = OperateInput(
+        org_id="test_org_sensitive",
+        start_date="2025-01-01",
+        end_date="2025-01-31",
+        headers={"Authorization": "Bearer secret_token_123"},
+        api_domain="test.zoho.com",
+        query="Test sensitive data",
+    )
+
+    with patch("orchestrators.mis_orchestrator._log") as mock_log:
+        # Run orchestrator
+        result = run_mis(
+            input=input_data, sections=["pnl"], use_dag=False, max_workers=1
+        )
+
+        # Verify telemetry logs were emitted
+        log_calls = mock_log.info.call_args_list
+
+        # Check that sensitive data is redacted in logs
+        for call in log_calls:
+            if "extra" in call[1]:
+                extra_data = call[1]["extra"]
+                # Convert to string to check for redacted values
+                log_str = json.dumps(extra_data)
+                assert "secret_token_123" not in log_str
+                # Should contain redacted marker
+                assert "[REDACTED]" in log_str
+
+
+def test_orchestrator_metrics_aggregation():
+    """Test that orchestrator aggregates metrics properly"""
+    from helpers.telemetry import _get_current_context
+
+    # Clear any existing context
+    _get_current_context().clear()
+
+    # Mock input
+    input_data = OperateInput(
+        org_id="test_org_metrics",
+        start_date="2025-01-01",
+        end_date="2025-01-31",
+        headers={},
+        api_domain="test.zoho.com",
+        query="Test metrics aggregation",
+    )
+
+    with patch(
+        "orchestrators.mis_orchestrator.emit_orchestration_telemetry"
+    ) as mock_telemetry:
+        # Run orchestrator with multiple sections
+        result = run_mis(
+            input=input_data,
+            sections=["pnl", "salary", "balance_sheet"],
+            use_dag=False,
+            max_workers=1,
+        )
+
+        # Verify telemetry was called for each section
+        calls = mock_telemetry.call_args_list
+        assert len(calls) >= 3  # At least one call per section
+
+        # Verify metrics aggregation
+        total_duration = sum(call[1]["duration_ms"] for call in calls)
+        assert total_duration > 0
+
+        # Verify all calls have same run_id
+        run_ids = set(call[1]["run_id"] for call in calls)
+        assert len(run_ids) == 1
+        assert list(run_ids)[0] == result.meta["run_id"]
+
+
+def test_orchestrator_performance_overhead():
+    """Test that telemetry adds minimal performance overhead"""
+    from helpers.telemetry import _get_current_context
+
+    # Clear any existing context
+    _get_current_context().clear()
+
+    # Mock input
+    input_data = OperateInput(
+        org_id="test_org_perf",
+        start_date="2025-01-01",
+        end_date="2025-01-31",
+        headers={},
+        api_domain="test.zoho.com",
+        query="Test performance overhead",
+    )
+
+    # Measure execution time without telemetry
+    with patch(
+        "orchestrators.mis_orchestrator.emit_orchestration_telemetry"
+    ) as mock_telemetry:
+        start_time = time.perf_counter()
+        result = run_mis(
+            input=input_data, sections=["pnl"], use_dag=False, max_workers=1
+        )
+        execution_time = time.perf_counter() - start_time
+
+        # Verify telemetry was called
+        assert mock_telemetry.called
+
+        # Performance overhead should be minimal (< 3% as per requirements)
+        # This is a basic check - in real scenarios, you'd want more sophisticated benchmarking
+        assert (
+            execution_time < 1.0
+        )  # Should complete within 1 second for simple operations

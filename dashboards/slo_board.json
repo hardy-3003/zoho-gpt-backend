@@ -1,0 +1,338 @@
+{
+  "dashboard": {
+    "title": "SLO Board",
+    "description": "Service Level Objectives monitoring with error budgets, burn rates, and breach predictions",
+    "version": "1.0",
+    "refresh_interval": "60s",
+    "time_range": "7d",
+    "panels": [
+      {
+        "id": "slo_overview",
+        "title": "SLO Overview",
+        "type": "stat",
+        "position": {"x": 0, "y": 0, "w": 12, "h": 4},
+        "targets": [
+          {
+            "query": "slo_availability_current",
+            "legend": "Availability",
+            "format": "percent"
+          },
+          {
+            "query": "slo_latency_p95_current",
+            "legend": "P95 Latency (ms)",
+            "format": "ms"
+          },
+          {
+            "query": "slo_error_rate_current",
+            "legend": "Error Rate",
+            "format": "percent"
+          },
+          {
+            "query": "slo_anomaly_rate_current",
+            "legend": "Anomaly Rate",
+            "format": "percent"
+          }
+        ],
+        "thresholds": [
+          {"color": "green", "value": null},
+          {"color": "yellow", "value": 95},
+          {"color": "red", "value": 90}
+        ]
+      },
+      {
+        "id": "error_budget_status",
+        "title": "Error Budget Status",
+        "type": "gauge",
+        "position": {"x": 0, "y": 4, "w": 6, "h": 6},
+        "targets": [
+          {
+            "query": "slo_error_budget_remaining",
+            "legend": "Error Budget Remaining",
+            "format": "percent"
+          }
+        ],
+        "options": {
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 20},
+                {"color": "green", "value": 50}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": "burn_rate_analysis",
+        "title": "Burn Rate Analysis",
+        "type": "timeseries",
+        "position": {"x": 6, "y": 4, "w": 6, "h": 6},
+        "targets": [
+          {
+            "query": "slo_burn_rate_current",
+            "legend": "Current Burn Rate",
+            "format": "number"
+          },
+          {
+            "query": "slo_burn_rate_average",
+            "legend": "Average Burn Rate",
+            "format": "number"
+          }
+        ],
+        "thresholds": [
+          {"color": "green", "value": null},
+          {"color": "yellow", "value": 0.5},
+          {"color": "red", "value": 0.8}
+        ],
+        "y_axis": {
+          "label": "Burn Rate",
+          "min": 0,
+          "max": 1
+        }
+      },
+      {
+        "id": "slo_trends",
+        "title": "SLO Trends (7 Days)",
+        "type": "timeseries",
+        "position": {"x": 0, "y": 10, "w": 12, "h": 6},
+        "targets": [
+          {
+            "query": "slo_availability_trend",
+            "legend": "Availability",
+            "format": "percent"
+          },
+          {
+            "query": "slo_latency_p95_trend",
+            "legend": "P95 Latency",
+            "format": "ms"
+          },
+          {
+            "query": "slo_error_rate_trend",
+            "legend": "Error Rate",
+            "format": "percent"
+          }
+        ],
+        "thresholds": [
+          {"color": "green", "value": null},
+          {"color": "yellow", "value": 95},
+          {"color": "red", "value": 90}
+        ],
+        "y_axis": {
+          "label": "Value",
+          "min": 0
+        }
+      },
+      {
+        "id": "breach_predictions",
+        "title": "Breach Predictions",
+        "type": "table",
+        "position": {"x": 0, "y": 16, "w": 8, "h": 6},
+        "targets": [
+          {
+            "query": "slo_breach_predictions",
+            "columns": [
+              {"text": "SLO", "field": "slo_name"},
+              {"text": "Current Value", "field": "current_value"},
+              {"text": "Target", "field": "target_value"},
+              {"text": "Error Budget Remaining", "field": "error_budget_remaining"},
+              {"text": "Burn Rate", "field": "burn_rate"},
+              {"text": "Days to Breach", "field": "days_to_breach"},
+              {"text": "Status", "field": "status"}
+            ]
+          }
+        ],
+        "transformations": [
+          {
+            "type": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {}
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": false,
+              "displayName": "Days to Breach"
+            }
+          ]
+        }
+      },
+      {
+        "id": "slo_alerts",
+        "title": "SLO Alerts",
+        "type": "table",
+        "position": {"x": 8, "y": 16, "w": 4, "h": 6},
+        "targets": [
+          {
+            "query": "slo_alerts_recent",
+            "columns": [
+              {"text": "Time", "field": "timestamp"},
+              {"text": "SLO", "field": "slo_name"},
+              {"text": "Severity", "field": "severity"},
+              {"text": "Message", "field": "message"}
+            ]
+          }
+        ],
+        "transformations": [
+          {
+            "type": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {}
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "Time"
+            }
+          ]
+        }
+      },
+      {
+        "id": "error_budget_consumption",
+        "title": "Error Budget Consumption",
+        "type": "timeseries",
+        "position": {"x": 0, "y": 22, "w": 6, "h": 6},
+        "targets": [
+          {
+            "query": "slo_error_budget_consumed",
+            "legend": "Error Budget Consumed",
+            "format": "percent"
+          }
+        ],
+        "thresholds": [
+          {"color": "green", "value": null},
+          {"color": "yellow", "value": 50},
+          {"color": "red", "value": 80}
+        ],
+        "y_axis": {
+          "label": "Error Budget (%)",
+          "min": 0,
+          "max": 100
+        }
+      },
+      {
+        "id": "slo_compliance",
+        "title": "SLO Compliance",
+        "type": "piechart",
+        "position": {"x": 6, "y": 22, "w": 6, "h": 6},
+        "targets": [
+          {
+            "query": "slo_compliance_status",
+            "legend": "SLO Compliance Status",
+            "format": "number"
+          }
+        ],
+        "options": {
+          "showLegend": true,
+          "showValues": true,
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "slo_type",
+          "type": "query",
+          "query": "slo_types",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "org_id",
+          "type": "query",
+          "query": "slo_org_ids",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "time_window",
+          "type": "custom",
+          "query": "7d,30d,90d",
+          "refresh": 1,
+          "includeAll": false,
+          "multi": false,
+          "current": {
+            "selected": true,
+            "text": "7d",
+            "value": "7d"
+          }
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "SLO Breaches",
+          "datasource": "annotations",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "enable": true
+        },
+        {
+          "name": "SLO Alerts",
+          "datasource": "annotations",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "enable": true
+        },
+        {
+          "name": "Deployments",
+          "datasource": "annotations",
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "enable": true
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Runbooks",
+        "url": "/docs/runbooks/",
+        "targetBlank": true
+      },
+      {
+        "title": "SLO Documentation",
+        "url": "/docs/slos/",
+        "targetBlank": true
+      },
+      {
+        "title": "Alert Policies",
+        "url": "/docs/alert_policies/",
+        "targetBlank": true
+      },
+      {
+        "title": "SLO Configuration",
+        "url": "/config/slos/",
+        "targetBlank": true
+      }
+    ]
+  }
+}
