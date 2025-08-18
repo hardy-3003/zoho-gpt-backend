@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Year On Year Growth
@@ -17,6 +23,7 @@ from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.learning_hooks import score_confidence as _score
 from helpers.schema_registry import validate_output_contract
 from typing import Any, Dict
+
 LOGIC_ID = "L-035"
 
 try:
@@ -49,7 +56,7 @@ def _validate_yoy(result: Dict[str, Any]) -> List[str]:
     for y in years:
         rev = float(y.get("revenue", 0.0) or 0.0)
         if rev < 0:
-            alerts.append(f"negative_revenue:{y.get('year','')}")
+            alerts.append(f"negative_revenue:{y.get('year', '')}")
         yoy = y.get("yoy_pct")
         if prev is None and yoy is not None:
             alerts.append("yoy_without_prev")
@@ -161,12 +168,15 @@ def handle_impl(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     return out
 
+
 def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
     # Call legacy compute (now handle_impl). It may already return contract-shaped output.
     core_out = handle_impl(payload)
 
     # If core_out already looks contract-compliant, validate and return as-is.
-    if isinstance(core_out, dict) and        all(k in core_out for k in ("result","provenance","confidence","alerts")):
+    if isinstance(core_out, dict) and all(
+        k in core_out for k in ("result", "provenance", "confidence", "alerts")
+    ):
         try:
             validate_output_contract(core_out)
         except Exception:
@@ -187,7 +197,11 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     # Minimal provenance (period-aware)
     prov = make_provenance(
-        result={"endpoint": "reports/auto", "ids": [], "filters": {"period": payload.get("period")}}
+        result={
+            "endpoint": "reports/auto",
+            "ids": [],
+            "filters": {"period": payload.get("period")},
+        }
     )
 
     # History + Deltas + Anomalies
@@ -209,7 +223,11 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     confidence = score_confidence(
         sample_size=sample_size,
-        anomalies=len(alerts_pack.get("anomalies", [])) if isinstance(alerts_pack, dict) else 0,
+        anomalies=(
+            len(alerts_pack.get("anomalies", []))
+            if isinstance(alerts_pack, dict)
+            else 0
+        ),
         validations_failed=validations_failed,
     )
 
@@ -223,35 +241,23 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
             alerts.append(alert)
         else:
             alerts.append({"msg": str(alert), "level": "info"})
-    
+
     output = {
         "result": result,
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output
+
 
 # Export wrapper as the official handler
 def handle(payload: Dict[str, Any]) -> Dict[str, Any]:

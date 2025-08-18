@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Shareholder Equity Movement
@@ -54,7 +60,7 @@ def _validate_equity_movement(result: Dict[str, Any]) -> List[str]:
         wdr = float(row.get("withdrawal", 0.0) or 0.0)
         net = float(row.get("net", inj - wdr))
         if abs(net - (inj - wdr)) > 0.01:
-            alerts.append(f"net_mismatch:{row.get('name','')}")
+            alerts.append(f"net_mismatch:{row.get('name', '')}")
         sum_net += net
     if abs(sum_net - totals_net) > 0.01:
         alerts.append("totals_mismatch")
@@ -247,26 +253,13 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output

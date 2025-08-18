@@ -1,0 +1,164 @@
+# Bank Covenant Configuration
+# Defines ratio thresholds and policies for different facilities/loans
+# Used by logic_231_ratio_impact_advisor for covenant monitoring
+
+# Default covenant profile (used when org-specific not found)
+default:
+  facility_id: "DEFAULT"
+  facility_name: "Default Covenant Profile"
+  lender: "Default Bank"
+  
+  # Ratio thresholds
+  thresholds:
+    dscr: 1.50          # Debt Service Coverage Ratio
+    icr: 3.00           # Interest Coverage Ratio  
+    current_ratio: 1.25 # Current Ratio
+    quick_ratio: 1.00   # Quick Ratio
+    de_ratio: 1.00      # Debt-to-Equity Ratio
+  
+  # Buffer percentage for near-breach warnings
+  buffer_percentage: 0.10  # 10% buffer
+  
+  # Policy settings
+  policy:
+    block_on_breach: false  # Warn only, don't block
+    require_approval: true  # Require approval for near-breach
+    auto_notify: true       # Auto-notify stakeholders
+  
+  # Monitoring settings
+  monitoring:
+    check_frequency: "daily"  # daily, weekly, monthly
+    alert_channels: ["email", "dashboard"]
+    escalation_threshold: 2   # Number of breaches before escalation
+
+# Organization-specific profiles
+org_60020606976:
+  facility_id: "TL-001"
+  facility_name: "Term Loan Facility"
+  lender: "HDFC Bank"
+  
+  thresholds:
+    dscr: 1.65
+    icr: 3.50
+    current_ratio: 1.30
+    quick_ratio: 1.05
+    de_ratio: 0.90
+  
+  buffer_percentage: 0.15  # 15% buffer for this org
+  
+  policy:
+    block_on_breach: true   # Block on breach for this org
+    require_approval: true
+    auto_notify: true
+  
+  monitoring:
+    check_frequency: "real_time"  # Real-time for this org
+    alert_channels: ["email", "dashboard", "slack"]
+    escalation_threshold: 1
+
+# Working capital facility
+org_60020606976_wc:
+  facility_id: "WC-001" 
+  facility_name: "Working Capital Facility"
+  lender: "ICICI Bank"
+  
+  thresholds:
+    current_ratio: 1.20
+    quick_ratio: 0.95
+    de_ratio: 1.20
+  
+  buffer_percentage: 0.10
+  
+  policy:
+    block_on_breach: false
+    require_approval: false
+    auto_notify: true
+  
+  monitoring:
+    check_frequency: "weekly"
+    alert_channels: ["email", "dashboard"]
+    escalation_threshold: 3
+
+# SME facility example
+org_123456789:
+  facility_id: "SME-001"
+  facility_name: "SME Term Loan"
+  lender: "SBI"
+  
+  thresholds:
+    dscr: 1.40
+    icr: 2.50
+    current_ratio: 1.15
+    quick_ratio: 0.90
+    de_ratio: 1.50
+  
+  buffer_percentage: 0.20  # Larger buffer for SMEs
+  
+  policy:
+    block_on_breach: false
+    require_approval: true
+    auto_notify: true
+  
+  monitoring:
+    check_frequency: "monthly"
+    alert_channels: ["email"]
+    escalation_threshold: 2
+
+# Covenant calculation methods
+calculation_methods:
+  dscr:
+    description: "Debt Service Coverage Ratio"
+    formula: "(EBITDA + Non-cash expenses - Taxes) / (Interest + Principal due)"
+    min_value: 0.0
+    max_value: 10.0
+    precision: 2
+  
+  icr:
+    description: "Interest Coverage Ratio"
+    formula: "EBITDA / Interest Expense"
+    min_value: 0.0
+    max_value: 50.0
+    precision: 2
+  
+  current_ratio:
+    description: "Current Ratio"
+    formula: "Current Assets / Current Liabilities"
+    min_value: 0.0
+    max_value: 10.0
+    precision: 2
+  
+  quick_ratio:
+    description: "Quick Ratio"
+    formula: "(Current Assets - Inventory) / Current Liabilities"
+    min_value: 0.0
+    max_value: 10.0
+    precision: 2
+  
+  de_ratio:
+    description: "Debt-to-Equity Ratio"
+    formula: "Total Debt / Shareholder's Equity"
+    min_value: 0.0
+    max_value: 10.0
+    precision: 2
+
+# Alert severity levels
+severity_levels:
+  info:
+    description: "Informational - ratio within acceptable range"
+    color: "green"
+    action: "none"
+  
+  warning:
+    description: "Warning - ratio approaching threshold"
+    color: "yellow"
+    action: "notify"
+  
+  error:
+    description: "Error - ratio below threshold"
+    color: "red"
+    action: "block"
+  
+  critical:
+    description: "Critical - multiple ratios breached"
+    color: "red"
+    action: "escalate"

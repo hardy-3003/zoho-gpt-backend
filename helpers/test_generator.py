@@ -210,8 +210,8 @@ class Test{test_name}:
     def test_basic_functionality(self):
         """Test basic functionality with valid input."""
         payload = {{
-            "data_source": "{generated_logic.parameters.get('data_source', 'test_data')}",
-            "analysis_type": "{generated_logic.parameters.get('analysis_type', 'general')}"
+            "data_source": "{generated_logic.parameters.get("data_source", "test_data")}",
+            "analysis_type": "{generated_logic.parameters.get("analysis_type", "general")}"
         }}
         
         result = handle(payload)
@@ -246,8 +246,8 @@ class Test{test_name}:
     def test_confidence_scoring(self):
         """Test that confidence scores are reasonable."""
         payload = {{
-            "data_source": "{generated_logic.parameters.get('data_source', 'test_data')}",
-            "analysis_type": "{generated_logic.parameters.get('analysis_type', 'general')}"
+            "data_source": "{generated_logic.parameters.get("data_source", "test_data")}",
+            "analysis_type": "{generated_logic.parameters.get("analysis_type", "general")}"
         }}
         
         result = handle(payload)
@@ -260,8 +260,8 @@ class Test{test_name}:
     def test_provenance_tracking(self):
         """Test that provenance information is included."""
         payload = {{
-            "data_source": "{generated_logic.parameters.get('data_source', 'test_data')}",
-            "analysis_type": "{generated_logic.parameters.get('analysis_type', 'general')}"
+            "data_source": "{generated_logic.parameters.get("data_source", "test_data")}",
+            "analysis_type": "{generated_logic.parameters.get("analysis_type", "general")}"
         }}
         
         result = handle(payload)
@@ -275,8 +275,8 @@ class Test{test_name}:
     def test_alert_handling(self):
         """Test that alerts are properly formatted."""
         payload = {{
-            "data_source": "{generated_logic.parameters.get('data_source', 'test_data')}",
-            "analysis_type": "{generated_logic.parameters.get('analysis_type', 'general')}"
+            "data_source": "{generated_logic.parameters.get("data_source", "test_data")}",
+            "analysis_type": "{generated_logic.parameters.get("analysis_type", "general")}"
         }}
         
         result = handle(payload)
@@ -289,8 +289,8 @@ class Test{test_name}:
     def test_learning_hooks_integration(self, mock_record_feedback):
         """Test integration with learning hooks."""
         payload = {{
-            "data_source": "{generated_logic.parameters.get('data_source', 'test_data')}",
-            "analysis_type": "{generated_logic.parameters.get('analysis_type', 'general')}"
+            "data_source": "{generated_logic.parameters.get("data_source", "test_data")}",
+            "analysis_type": "{generated_logic.parameters.get("analysis_type", "general")}"
         }}
         
         result = handle(payload)
@@ -302,8 +302,8 @@ class Test{test_name}:
     def test_history_integration(self, mock_write_event):
         """Test integration with history store."""
         payload = {{
-            "data_source": "{generated_logic.parameters.get('data_source', 'test_data')}",
-            "analysis_type": "{generated_logic.parameters.get('analysis_type', 'general')}"
+            "data_source": "{generated_logic.parameters.get("data_source", "test_data")}",
+            "analysis_type": "{generated_logic.parameters.get("analysis_type", "general")}"
         }}
         
         result = handle(payload)
@@ -316,8 +316,8 @@ class Test{test_name}:
         import time
         
         payload = {{
-            "data_source": "{generated_logic.parameters.get('data_source', 'test_data')}",
-            "analysis_type": "{generated_logic.parameters.get('analysis_type', 'general')}"
+            "data_source": "{generated_logic.parameters.get("data_source", "test_data")}",
+            "analysis_type": "{generated_logic.parameters.get("analysis_type", "general")}"
         }}
         
         start_time = time.time()
@@ -338,8 +338,8 @@ class Test{test_name}:
         initial_memory = process.memory_info().rss
         
         payload = {{
-            "data_source": "{generated_logic.parameters.get('data_source', 'test_data')}",
-            "analysis_type": "{generated_logic.parameters.get('analysis_type', 'general')}"
+            "data_source": "{generated_logic.parameters.get("data_source", "test_data")}",
+            "analysis_type": "{generated_logic.parameters.get("analysis_type", "general")}"
         }}
         
         # Run multiple times to check for memory leaks

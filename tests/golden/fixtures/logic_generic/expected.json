@@ -1,0 +1,38 @@
+{
+  "logic_output": {
+    "result": {
+      "data": "Stubbed data for logic_099_example_generic",
+      "count": 123,
+      "period": "2025-01",
+      "org_id": "60020606976"
+    },
+    "provenance": {
+      "computation": [
+        "evidence://compute/contract/stubbed"
+      ],
+      "source_data": [
+        "evidence://logic_099_example_generic/60020606976/2025-01/stubbed"
+      ],
+      "validation": [
+        "evidence://validate/logic_099_example_generic/contract"
+      ]
+    },
+    "confidence": 0.95,
+    "alerts": [],
+    "applied_rule_set": {
+      "packs": {},
+      "effective_date_window": null
+    },
+    "explanation": "Contract-phase stubbed response for logic_099_example_generic"
+  },
+  "execution_time_ms": 0.0,
+  "cache_hit": false,
+  "metadata": {
+    "contract_version": "1.0",
+    "logic_id": "logic_099_example_generic",
+    "org_id": "60020606976",
+    "period": "2025-01"
+  }
+}
+
+

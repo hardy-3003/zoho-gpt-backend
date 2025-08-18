@@ -23,10 +23,12 @@ LOGIC_MODULES = [
     ("logics.logic_200_vendor_side_carbon_emissions_estimator", "L-200"),
 ]
 
+
 def _call(mod_name):
     m = importlib.import_module(mod_name)
     fn = getattr(m, "handle")
     return fn({"period": "2025-06", "sample_size": 5})
+
 
 def test_wave12_contract_shape():
     for mod, _ in LOGIC_MODULES:

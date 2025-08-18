@@ -348,18 +348,12 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "confidence": confidence,
         "alerts": alerts,
         "meta": {
-
-                    **LOGIC_META,
-
-                    "strategy": "l4-v0",
-
-                    "org_id": payload.get("org_id", "unknown"),
-
-                    "query": payload.get("query", ""),
-
-                    "notes": [],
-
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output

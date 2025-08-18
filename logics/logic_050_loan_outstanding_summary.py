@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Loan Outstanding Summary
@@ -54,9 +60,9 @@ def _validate_loan_outstanding(result: Dict[str, Any]) -> List[str]:
         move = float(ln.get("movement", 0.0) or 0.0)
         close_p = float(ln.get("principal_close", open_p + move))
         if abs(close_p - (open_p + move)) > 0.01:
-            alerts.append(f"close_mismatch:{ln.get('account','')}")
+            alerts.append(f"close_mismatch:{ln.get('account', '')}")
         if close_p < 0 or open_p < 0:
-            alerts.append(f"negative_principal:{ln.get('account','')}")
+            alerts.append(f"negative_principal:{ln.get('account', '')}")
         sum_close += close_p
     if abs(sum_close - totals_close) > 0.01:
         alerts.append("totals_close_mismatch")
@@ -251,26 +257,13 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output

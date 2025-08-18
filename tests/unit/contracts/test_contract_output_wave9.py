@@ -23,10 +23,12 @@ LOGIC_MODULES = [
     ("logics.logic_140_customer_order_accuracy", "L-140"),
 ]
 
+
 def _call(mod_name):
     m = importlib.import_module(mod_name)
     fn = getattr(m, "handle")
     return fn({"period": "2025-06", "sample_size": 5})
+
 
 def test_wave9_contract_shape():
     for mod, _ in LOGIC_MODULES:

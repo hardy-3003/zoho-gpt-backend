@@ -18,15 +18,23 @@ LOGIC_MODULES = [
     ("logics.logic_175_user_behavior_based_module_suggestions", "L-175"),
     ("logics.logic_176_scoring_system_for_business_maturity_level", "L-176"),
     ("logics.logic_177_ca_review_collaboration_toolkit", "L-177"),
-    ("logics.logic_178_ai_powered_explanation_tool_explain_balance_sheet_in_plain_hindi", "L-178"),
-    ("logics.logic_179_journal_trace_visualizer_graph_view_of_entry_relationships", "L-179"),
+    (
+        "logics.logic_178_ai_powered_explanation_tool_explain_balance_sheet_in_plain_hindi",
+        "L-178",
+    ),
+    (
+        "logics.logic_179_journal_trace_visualizer_graph_view_of_entry_relationships",
+        "L-179",
+    ),
     ("logics.logic_180_interlinked_report_mapper", "L-180"),
 ]
+
 
 def _call(mod_name):
     m = importlib.import_module(mod_name)
     fn = getattr(m, "handle")
     return fn({"period": "2025-06", "sample_size": 5})
+
 
 def test_wave11_contract_shape():
     for mod, _ in LOGIC_MODULES:

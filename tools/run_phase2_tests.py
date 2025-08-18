@@ -15,10 +15,10 @@ from pathlib import Path
 
 def run_command(cmd: str, description: str) -> bool:
     """Run a command and return success status."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Running: {description}")
     print(f"Command: {cmd}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -93,9 +93,9 @@ def main():
     )
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"🎯 PHASE 2 DELIVERABLES SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"✅ 2.1 Test Coverage: Generated {len(test_files)} test files")
     print(f"✅ 2.2 Contract Compliance: Created verification script")
     print(f"✅ 2.3 Performance Testing: Created load and integration tests")

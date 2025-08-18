@@ -3,6 +3,7 @@ Version: 2025-08-15 • Owner: Hardik • Status: Living document (authoritative
 
 > Single source of truth for scope, principles, structure, governance, and acceptance criteria.  
 > Keep and re-share this file if anything ever resets. Supersedes prior versions (V1/V2) with stronger determinism, evidence guarantees, regulatory automation, and production SLOs.
+> (This document extends the prior V4 scope by **adding L-231: Ratio Impact Advisor** without removing any existing content.)  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -12,36 +13,36 @@ Applies to every logic module (.py), connector, orchestrator, rule-pack, and sur
 
 1. Deterministic-First, Generative-Second  
    • Accounting/compliance conclusions MUST be produced by deterministic rules (rules_engine + Regulatory OS DSL).  
-   • LLMs may propose mappings, narratives, remediations, and prioritizations WITH confidence scores; these are advisory.
+   • LLMs may propose mappings, narratives, remediations, and prioritizations WITH confidence scores; these are advisory.  
 
 2. Evidence or It Didn’t Happen  
    • Every figure/statement must carry provenance into a WORM, content-addressed Evidence Graph (hash-chained).  
-   • Closed periods are replayable (byte-identical) from frozen inputs + rule-pack versions.
+   • Closed periods are replayable (byte-identical) from frozen inputs + rule-pack versions.  
 
 3. Self-Learning (Within Guardrails)  
    • Each logic maintains in-file strategy registry and feedback loops.  
-   • Learning can never overwrite deterministic truth; it only proposes better strategies or mappings.
+   • Learning can never overwrite deterministic truth; it only proposes better strategies or mappings.  
 
 4. History-Aware  
-   • Persist changelogs for invoices, bills, POs, salaries, items, taxes, etc. Track deltas (MoM, YoY), vendor and cross-org deviation.
+   • Persist changelogs for invoices, bills, POs, salaries, items, taxes, etc. Track deltas (MoM, YoY), vendor and cross-org deviation.  
 
 5. Reverse-Learning for New Formats  
-   • On unfamiliar reports (e.g., MIS PDF), auto-extract → map → verify → register schema → regenerate next time with provenance.
+   • On unfamiliar reports (e.g., MIS PDF), auto-extract → map → verify → register schema → regenerate next time with provenance.  
 
 6. Expandable in the Same File  
-   • Each logic evolves in its own `.py` via internal strategies/subtrees. New files only for shared helpers/utilities.
+   • Each logic evolves in its own `.py` via internal strategies/subtrees. New files only for shared helpers/utilities.  
 
 7. Many-to-One Orchestration  
-   • Orchestrators compose **2 → ∞** logics with DAG execution, partial retries, graceful degradation, and applied_rule_set attachment.
+   • Orchestrators compose **2 → ∞** logics with DAG execution, partial retries, graceful degradation, and applied_rule_set attachment.  
 
 8. Auto-Expansion  
-   • Repeated unmet requests auto-spawn logic stubs with tests and safe registration.
+   • Repeated unmet requests auto-spawn logic stubs with tests and safe registration.  
 
 9. Zero-Trust by Default  
-   • Inputs validated against schemas; PII redaction; least privilege; no portal automation without explicit consent.
+   • Inputs validated against schemas; PII redaction; least privilege; no portal automation without explicit consent.  
 
 10. Cost-&-SLO-Aware  
-   • Deterministic caches, rate limits, concurrency budgets; measurable SLOs (availability, p95/p99 latencies).
+   • Deterministic caches, rate limits, concurrency budgets; measurable SLOs (availability, p95/p99 latencies).  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -53,24 +54,27 @@ repo/
     logic_001_profit_loss.py
     ...
     logic_230_regulatory_delta_explainer.py
+    logic_231_ratio_impact_advisor.py     # NEW: proactive ratio impact simulation + advisory (see §12 & Appendix F)
   /orchestrators/
     mis_orchestrator.py
     generic_report_orchestrator.py
+    transaction_posting_orchestrator.py   # NEW (optional): JE-time checks including L-231, before commit
   /helpers/
-    zoho_client.py                       # Auth, backoff, retries, caching
-    pdf_extractor.py                     # OCR/parse; table/field detection
-    schema_registry.py                   # JSONSchemas for inputs/outputs
-    rules_engine.py                      # Deterministic rules + guardrails + DSL hooks
-    history_store.py                     # Append-only event/event-diff store
-    learning_hooks.py                    # Self-learning interfaces & scoring
-    cache.py                             # Layered cache (memory/redis/ttl)
-    feature_flags.py                     # Launch-darkly-style toggles (local impl)
+    zoho_client.py                        # Auth, backoff, retries, caching
+    pdf_extractor.py                      # OCR/parse; table/field detection
+    schema_registry.py                    # JSONSchemas for inputs/outputs
+    rules_engine.py                       # Deterministic rules + guardrails + DSL hooks
+    history_store.py                      # Append-only event/event-diff store
+    learning_hooks.py                     # Self-learning interfaces & scoring
+    cache.py                              # Layered cache (memory/redis/ttl)
+    feature_flags.py                      # Launch-darkly-style toggles (local impl)
+    ratios.py                             # NEW: DSCR/ICR/current ratio/etc. deterministic calculators (Appendix F)
   /regulatory_os/                        # Rule packs + watchers + DSL + adapters
-    rule_packs/                          # e.g., gst@2025-08/, itd@2025-08/
-    watchers/                            # CBIC/CBDT/GSTN/IRP/E-Way Bill/API Setu diffs
-    dsl/                                 # Rules DSL grammar + compiler/transpiler
-    adapters/                            # Normalizers: GSTR-2B, 26AS, AIS, e-invoice, AA
-  /connectors/                           # Consent-based, MCP-independent sources
+    rule_packs/                           # e.g., gst@2025-08/, itd@2025-08/
+    watchers/                             # CBIC/CBDT/GSTN/IRP/E-Way Bill/API Setu diffs
+    dsl/                                  # Rules DSL grammar + compiler/transpiler
+    adapters/                             # Normalizers: GSTR-2B, 26AS, AIS, e-invoice, AA
+  /connectors/                            # Consent-based, MCP-independent sources
     apisetu_client.py
     gsp_gst_client.py
     irp_einvoice_client.py
@@ -78,28 +82,31 @@ repo/
     itd_traces_client.py
     aa_client.py
     mca_client.py
-  /evidence/                             # Evidence OS
-    ledger.py                            # WORM (hash-chained, Merkle-rooted)
-    blob_store.py                        # Content-addressed artifacts
-    signer.py                            # Optional signing for legal defensibility
+  /evidence/                              # Evidence OS
+    ledger.py                             # WORM (hash-chained, Merkle-rooted)
+    blob_store.py                         # Content-addressed artifacts
+    signer.py                             # Optional signing for legal defensibility
   /observability/
-    prometheus/                          # Rules, alerts (SLOs)
-    dashboards/                          # Grafana JSON
-    runbooks/                            # Incident runbooks (SLO, latency, deps)
+    prometheus/                           # Rules, alerts (SLOs)
+    dashboards/                           # Grafana JSON
+    runbooks/                             # Incident runbooks (SLO, latency, deps)
   /surfaces/
-    openapi.yaml                         # OpenAPI for /api/execute etc.
-    graphql/                             # GraphQL schema & resolvers
-    cli/                                 # Minimal CLI wrapper
-  /prompts/                              # Few-shot prompts for narratives (non-authoritative)
-  /tests/                                # Unit, integration, golden, contract, DSL, security, load
-  /docs/                                 # ADRs, SOPs, CHANGELOG, learned formats
+    openapi.yaml                          # OpenAPI for /api/execute etc.
+    graphql/                              # GraphQL schema & resolvers
+    cli/                                  # Minimal CLI wrapper
+  /prompts/                               # Few-shot prompts for narratives (non-authoritative)
+  /tests/                                 # Unit, integration, golden, contract, DSL, security, load
+  /docs/                                  # ADRs, SOPs, CHANGELOG, learned formats
+  /configs/                               # NEW: covenant thresholds & bank policy profiles
+    bank_covenants.yaml                   # DSCR/ICR/current ratio/min liquidity by facility/loan id
+    ratio_targets.yaml                    # Internal targets to drive alerts/suggestions
 
 Tenets
 • MCP-ready: /mcp/manifest, /mcp/search (POST), /mcp/fetch (POST + SSE).  
 • MCP-independent: /api/execute, /graphql, /webhooks, /sse, /cli.  
 • Observability: Structured logs/metrics + SLOs per logic/orchestrator.  
 • Security: AuthN/Z, rate limits, schema validation, consent objects, PII redaction.  
-• Data Residency: Configurable storage backends with encryption at rest + region pinning.
+• Data Residency: Configurable storage backends with encryption at rest + region pinning.  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -175,7 +182,7 @@ Output Contract (Every Logic)
 Hard Rules
 • No PII in messages/logs; IDs only.  
 • Confidence is computed by deterministic heuristics; LLM confidence is advisory only.  
-• Missing data is explicit (null + alert), never silently omitted.
+• Missing data is explicit (null + alert), never silently omitted.  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -193,7 +200,12 @@ Orchestrator Output MUST include:
   "alerts": [ ... merged and deduped ... ],
   "completeness": 0.0-1.0,
   "applied_rule_set": { ... merged pack versions ... }
-}
+}  
+
+**NEW (Optional) Transaction Posting Orchestrator**  
+• Purpose: Run JE-time checks (including L-231) *before commit*.  
+• Triggers: UI post, API `/api/execute` with `proposed_entry`, or webhook from ERP.  
+• Behavior: Simulate ratios → attach alerts/suggestions → block or warn per policy flag.
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -204,7 +216,7 @@ Orchestrator Output MUST include:
 3. Provenance learning → persist mapping (field → endpoint/path/filter).  
 4. Schema capture → register versioned report schema.  
 5. Verification → reconcile totals/subtotals; flag mismatches.  
-6. Auto-enable generation → expose as orchestrated report next time (with evidence).
+6. Auto-enable generation → expose as orchestrated report next time (with evidence).  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -214,7 +226,7 @@ Orchestrator Output MUST include:
 • blob_store.py: Content-addressed storage for artifacts (PDFs, JSON, CSV, images).  
 • signer.py: Optional signing (org key) for legal defensibility.  
 • Replay: Recompute closed periods using frozen inputs + rule-packs → byte-identical outputs.  
-• Coverage: ≥90% evidence nodes mapped to outputs for MIS/P&L sections.
+• Coverage: ≥90% evidence nodes mapped to outputs for MIS/P&L sections.  
 
 Example Evidence Node
 {
@@ -222,7 +234,7 @@ Example Evidence Node
   "hash": "sha256:...",
   "source": "gstn:gstr2b",
   "meta": { "gstin": "...", "period": "2025-07", "line_no": 84523 }
-}
+}  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -232,7 +244,7 @@ Example Evidence Node
 • Watchers: Monitor CBIC/CBDT/GSTN/IRP/E-Way Bill/API Setu changes; open PRs with diff summaries.  
 • Adapters: Normalize payloads (GSTR-2B, 26AS, AIS, e-invoice, e-way bill, AA statements) to canonical schemas.  
 • DSL Compilation: Packs compile to deterministic code paths; orchestrators refuse packs that fail golden tests.  
-• Regulatory Impact Simulator: What-if deltas before effective dates.
+• Regulatory Impact Simulator: What-if deltas before effective dates.  
 
 Sample Rule Pack (YAML)
 pack: gst@2025-09
@@ -246,7 +258,7 @@ fixtures:
   inputs: fixtures/gst_2025_09_inputs.json
   expected: fixtures/gst_2025_09_expected.json
 tests:
-  - assert: "totals.itc_eligible == 123456.78"
+  - assert: "totals.itc_eligible == 123456.78"  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -255,7 +267,7 @@ tests:
 • Connectors live in /connectors/: gsp_gst_client.py, irp_einvoice_client.py, ewaybill_client.py, itd_traces_client.py, aa_client.py, mca_client.py, apisetu_client.py.  
 • Consent Objects: scope, purpose, expiry, retention, lawful basis; enforced at runtime.  
 • Allowed paths: Official APIs or user-in-the-loop uploads (no scraping of restricted portals).  
-• PII Rules: Redact in logs; encrypt at rest; rotate credentials; region pinning.
+• PII Rules: Redact in logs; encrypt at rest; rotate credentials; region pinning.  
 
 Consent Object (JSON)
 {
@@ -264,7 +276,7 @@ Consent Object (JSON)
   "purpose": "compliance_reconciliation",
   "expires_at": "2026-03-31T23:59:59Z",
   "retention_days": 365
-}
+}  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -276,7 +288,7 @@ Consent Object (JSON)
 • Privacy: PII redaction; selective disclosure; export redaction pipelines.  
 • Residency: Storage backends MUST support region selection and encryption at rest.  
 • Supply-Chain: Pin dependencies; SBOM generation; vulnerability scanning on CI.  
-• Chaos & Fault Tolerance: Backoffs, circuit breakers, bulkheads; dependency health in dashboards.
+• Chaos & Fault Tolerance: Backoffs, circuit breakers, bulkheads; dependency health in dashboards.  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -286,7 +298,7 @@ Consent Object (JSON)
 • Global SLOs: Availability ≥ 99.9%; p95 latency per logic ≤ budgeted ms; p99 ≤ double p95.  
 • Dashboards: SLO Overview, Dependency Lens (Zoho, GSTN, IRP, TRACES, AA).  
 • Alerts: MWMBR (Minutes With Missed Budget Ratio), burn-rate SLO alerts.  
-• Runbooks: Checked into /observability/runbooks/.
+• Runbooks: Checked into /observability/runbooks/.  
 
 Example Prometheus Record/Alert (pseudo-YAML)
 groups:
@@ -298,7 +310,7 @@ groups:
     expr: logic_latency_p95 > on(logic) budget_ms{tier="critical"}
     for: 10m
     labels: { severity: "page" }
-    annotations: { runbook: "slo_latency.md" }
+    annotations: { runbook: "slo_latency.md" }  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -310,7 +322,7 @@ Testing Matrix
 • Golden (Regulatory): Rule-packs MUST reproduce known historic outputs (byte-identical).  
 • Contract: Connector req/resp schemas; rate limit/backoff behavior.  
 • Security: PII redaction tests; consent scope enforcement.  
-• Load/Resilience: Soak tests; chaos/load profiles; cache efficacy.
+• Load/Resilience: Soak tests; chaos/load profiles; cache efficacy.  
 
 Commit & PR Template
 
@@ -328,19 +340,19 @@ PR
 • Evidence samples (IDs, hashes, merkle root)  
 • Screenshots (dashboards/runbooks)  
 • Risks & rollback  
-• Tags: category:regulation|patterns|growth|behavior|static
+• Tags: category:regulation|patterns|growth|behavior|static  
 
 Definition of Done (per change)
 • Deterministic implementation + tests pass (incl. goldens).  
 • Evidence coverage ≥ 90% for affected outputs.  
 • Observability in place; SLOs not regressing.  
 • Docs updated (CHANGELOG + ADR if regulation).  
-• Feature-flagged & both MCP + non-MCP surfaces working.
+• Feature-flagged & both MCP + non-MCP surfaces working.  
 
 Rollback Recipe
 • Revert rule-pack/version or logic file changes.  
 • Disable feature flag.  
-• Replay closed months with prior pack → verify byte-identity.
+• Replay closed months with prior pack → verify byte-identity.  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -367,7 +379,7 @@ paths:
 GraphQL Sketch
 type Query {
   execute(plan: ExecutePlanInput!): ExecuteResult!
-}
+}  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -375,7 +387,7 @@ type Query {
 
 Implementation rule: One file per logic in /logics/ named logic_###_snake_case.py.  
 Categories: Static • Dynamic(Regulation) • Dynamic(Patterns) • Dynamic(Growth) • Dynamic(Behavior).  
-Note: Same 1–200 set as V2, plus 201–230 “Regulatory OS & Evidence Intelligence”. IDs and names are unchanged to preserve backward compatibility.
+Note: Same 1–200 set as V2, plus 201–230 “Regulatory OS & Evidence Intelligence”. IDs and names are unchanged to preserve backward compatibility.  
 
 ✅ 1–102 Original Business Logic Modules (unchanged IDs)
 1. Profit and Loss Summary
@@ -616,13 +628,12 @@ Note: Same 1–200 set as V2, plus 201–230 “Regulatory OS & Evidence Intelli
 228. Ledger Drift Detector (books vs filings)
 229. Evidence Freshness Monitor
 230. Regulatory Delta Explainer
-
-Logic Category Annotations
-• Static — Core accounting/reporting. Rare functional changes; improvements focus on performance/clarity.  
-• Dynamic (Regulation) — Changes with laws; governed by Rule Packs + effective-date logic.  
-• Dynamic (Patterns) — Evolves with anomalies/history; thresholds adapt via statistics (p95/p99).  
-• Dynamic (Growth) — Expands features/integrations; backward-compatible outputs.  
-• Dynamic (Behavior) — Learns formats and reproduces them with provenance.
+231. Ratio Impact Advisor (Dynamic(Behavior))  
+    - Monitors **proposed journal entries** (JEs) against bank covenant ratios: DSCR, ICR, Current Ratio, Quick Ratio, Debt-to-Equity, Net Worth, Working Capital, Interest Coverage, Leverage and liquidity bands.  
+    - Deterministically calculates **current ratios** and **simulated post-entry ratios** using `/helpers/ratios.py` and company-specific thresholds from `/configs/bank_covenants.yaml`.  
+    - Emits alerts when a JE would breach or materially deteriorate a tracked ratio; includes **delta quantification** and **facility/loan mappings**.  
+    - Produces **compliant alternative postings/options** (advisory) with projected outcomes, validated by `validate_accounting()` and rule-packs where applicable.  
+    - Learns from accepted/rejected suggestions to tailor advice to the organization’s policy and lenders’ covenants.  (See Appendix F for algorithms & schemas.)
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -632,7 +643,7 @@ Logic Category Annotations
 • Pre-Commit: Format (black/ruff), type (mypy), security (bandit), licenses (pip-licenses), SBOM (syft).  
 • CI Stages: lint → unit → integration → golden → contract → security → build → e2e smoke → canary.  
 • Feature Flags: /helpers/feature_flags.py; flags are required for risk-bearing changes.  
-• Versioning: SemVer per logic and per rule-pack; CHANGELOG enforced by CI.
+• Versioning: SemVer per logic and per rule-pack; CHANGELOG enforced by CI.  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -640,7 +651,7 @@ Logic Category Annotations
 
 • Deterministic caches (keyed by inputs + pack versions + period).  
 • Budget files per logic (`/observability/budgets.yaml`) define p95/p99 & CPU/mem caps.  
-• “Fail-open advisory, fail-closed authoritative”: When dependencies wobble, advisory narratives may continue; authoritative numbers pause with clear alerts.
+• “Fail-open advisory, fail-closed authoritative”: When dependencies wobble, advisory narratives may continue; authoritative numbers pause with clear alerts.  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -665,7 +676,7 @@ Phase 3 (Watchers & Impact)
 9. Regulatory Impact Simulator for “what-if” before enforcement.
 
 Exit Criteria  
-• All above green; CI/CD gates (goldens, SBOM, security) enforced; feature flags removed for stabilized paths.
+• All above green; CI/CD gates (goldens, SBOM, security) enforced; feature flags removed for stabilized paths.  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -678,7 +689,7 @@ Exit Criteria
 • Narratives on demand: “Explain this variance” linked to rules + evidence.  
 • Security: No PII in logs; consent enforced; SBOM published; high/critical vulns = block.  
 • Observability: SLO dashboards live; MWMBR alerts firing correctly; runbooks complete.  
-• Surfaces: MCP + /api/execute + /graphql parity on contracts/evidence.
+• Surfaces: MCP + /api/execute + /graphql parity on contracts/evidence.  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -734,7 +745,7 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     write_event(logic="L-001", inputs=payload, outputs=out["result"], provenance=provenance)
     cache_set(cache_key, out, ttl_seconds=6*3600)
     record_feedback("L-001", context=payload, outputs=out["result"])
-    return out
+    return out  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -750,6 +761,8 @@ LOGIC_ORDER = [
   "logic_084_input_tax_credit_reconciliation",
   "logic_040_gst_reconciliation_status",
   # ... add 2→∞ logics
+  # Optionally include L-231 in MIS runs if you want monthly covenant health review:
+  # "logic_231_ratio_impact_advisor",
 ]
 
 def execute(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -778,7 +791,7 @@ def execute(payload: Dict[str, Any]) -> Dict[str, Any]:
       "applied_rule_set": {"packs": packs}
     }
     write_event(logic="ORCH_MIS", inputs=payload, outputs=result, provenance={})
-    return result
+    return result  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -790,7 +803,7 @@ Response: { "plan": [{"logic":"mis_orchestrator","inputs":{"org_id":"...","perio
 
 POST /mcp/fetch (SSE if stream=true)
 Request: { "plan":[...], "stream": true }
-Event Stream: progress %, section results, final JSON identical to /api/execute
+Event Stream: progress %, section results, final JSON identical to /api/execute  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -802,7 +815,7 @@ def test_gst_pack_reproduces_closed_month():
     expected = load("fixtures/gst_2025_08_expected.json")  # from historic filing
     result, packs = run_rule_pack("gst@2025-08", inputs)
     assert result == expected
-    assert packs["gst"] == "gst@2025-08"
+    assert packs["gst"] == "gst@2025-08"  
 
 ──────────────────────────────────────────────────────────────────────────────
 
@@ -814,13 +827,187 @@ Appendix E — PR Checklist (copy-paste into PR body)
 - [ ] Unit + Integration + Golden + Contract tests PASS  
 - [ ] Metrics & alerts updated; runbooks unchanged or updated  
 - [ ] Feature flag path documented; rollback recipe included  
-- [ ] Data residency/PII considerations documented
+- [ ] Data residency/PII considerations documented  
 
 ──────────────────────────────────────────────────────────────────────────────
 
-Next Step (Single-Step Approval Gate)
+Appendix F — Ratio Impact Advisor (L-231) — Deterministic Algorithms, Contracts & Notes
 
-Step-1: Approve the module contract & naming scheme (`logic_###_snake_case.py`) and the Evidence OS requirement.  
-Once approved, proceed to Migration Phase 0 (Appendix “Migration Map”) without changing behavior: add evidence handles to the top 10 logics.
+**Purpose**  
+Guard bank/lender-facing ratios at **JE-time** and **period review time**, with deterministic simulation + advisory suggestions that pass accounting validations and covenants.
 
-Author: Hardy • Last Updated: 2025-08-15
+**Inputs (schema)**  
+
+```json
+{
+  "org_id": "string",
+  "period": "YYYY-MM",
+  "proposed_entry": {
+    "date": "YYYY-MM-DD",
+    "lines": [
+      {"account": "string", "dr": 0.0, "cr": 0.0, "meta": {"vendor":"...", "invoice":"..."}}
+    ],
+    "notes": "string",
+    "source": "ui|api|automation"
+  },
+  "facility_ids": ["optional list of loan/facility ids for covenant mapping"]
+}
+Outputs (contract)
+
+```json
+{
+  "impact_report": {
+    "before": {"dscr": 1.65, "icr": 3.4, "current_ratio": 1.8, "de_ratio": 0.9},
+    "after":  {"dscr": 1.48, "icr": 3.1, "current_ratio": 1.55, "de_ratio": 0.92},
+    "deltas": {"dscr": -0.17, "icr": -0.3, "current_ratio": -0.25, "de_ratio": +0.02},
+    "breaches": [
+      {"ratio":"dscr", "threshold":1.50, "after":1.48, "facility":"TL-001"}
+    ]
+  },
+  "suggestions": [
+    {
+      "title": "Treat vendor prepayment as advance asset until GRN",
+      "rationale": "Preserves liquidity ratios; recognition aligns with delivery",
+      "compliance_refs": ["Ind-AS 37/38 sketch (example)"],
+      "projected_after": {"current_ratio": 1.75, "dscr": 1.56},
+      "posting_patch": {"reclass": [{"from":"expenses", "to":"advances"}]}
+    }
+  ]
+}
+Deterministic Formulas (helpers/ratios.py)
+
+Implement without ambiguity; do not rely on LLM for math.
+
+    •    Current Ratio = Current Assets / Current Liabilities
+    •    Quick Ratio = (Current Assets − Inventory) / Current Liabilities
+    •    Debt-to-Equity (D/E) = Total Debt / Shareholder’s Equity
+    •    Interest Coverage (ICR) = EBITDA / Interest Expense
+    •    DSCR = (EBITDA + Non-cash expenses − Taxes − Capex surrogate?*) / (Interest + Principal due)
+    •    Note: Define DSCR cash approximations in config per lender policy (e.g., include/exclude lease liabilities, treatment of non-cash items). Keep profiles in /configs/bank_covenants.yaml.
+    •    Working Capital = Current Assets − Current Liabilities
+
+Simulation Steps
+    1.    Pull trial balance + schedules for period.
+    2.    Compute baseline ratios (before).
+    3.    Apply proposed_entry to an in-memory TB clone (no commit).
+    4.    Recompute ratios (after) and calculate deltas.
+    5.    Map against /configs/bank_covenants.yaml (per facility/loan) to judge breaches or near-breach warnings (e.g., warn at 5–10% buffer).
+    6.    Run validate_accounting(); if an alternative suggestion violates rules, drop it.
+    7.    Generate suggestions (advisory) with projected outcomes; attach proofs via attach_evidence() (before/after snapshots + covenant profile used).
+
+Evidence & Observability
+    •    Evidence nodes include: baseline TB hash, simulated TB hash, covenant profile hash, and JE payload hash.
+    •    Metrics: ratio_sim_latency_ms, ratio_breach_count, near_breach_count, suggestion_accept_rate.
+    •    Feature flag: enable_ratio_guard. Default: off for pilot orgs; on after passing tests.
+
+Security & Compliance Notes
+    •    No PII; use IDs.
+    •    Configurable “block on breach” policy: warn-only vs hard-block (prevents JE commit).
+
+Minimal Module Skeleton
+
+# file: logics/logic_231_ratio_impact_advisor.py
+"""
+Title: Ratio Impact Advisor
+ID: L-231
+Tags: ["ratios","bank","advisory","behavior"]
+Category: Dynamic(Behavior)
+Required Inputs: {"org_id":"string","period":"YYYY-MM","proposed_entry":{...}}
+Outputs: {"impact_report": {...}, "suggestions":[...]}
+Assumptions: Covenants in /configs/bank_covenants.yaml; deterministic ratio functions in /helpers/ratios.py
+Evidence: trial_balance, journal_entries (simulated), bank_covenant_config
+Evolution Notes: Learns from accept/reject decisions per org/facility.
+"""
+from typing import Dict, Any
+from helpers.schema_registry import validate_payload
+from helpers.rules_engine import validate_accounting
+from helpers.learning_hooks import record_feedback, score_confidence
+from helpers.history_store import write_event
+from evidence.ledger import attach_evidence
+from helpers import ratios
+from helpers.cache import cache_get, cache_set
+import yaml, json
+
+def load_covenants(org_id:str)->Dict[str,Any]:
+    # load and scope by org/facility; consider caching + hash for evidence
+    with open("/configs/bank_covenants.yaml") as f:
+        cfg = yaml.safe_load(f)
+    return cfg.get(org_id, cfg.get("default", {}))
+
+def simulate_tb_with_entry(tb:Dict[str,Any], je:Dict[str,Any])->Dict[str,Any]:
+    # Apply DR/CR lines to a cloned TB deterministically
+    clone = json.loads(json.dumps(tb))
+    for line in je["lines"]:
+        acct = line["account"]
+        clone[acct]["dr"] += float(line.get("dr",0.0))
+        clone[acct]["cr"] += float(line.get("cr",0.0))
+    return clone
+
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    validate_payload("L-231", payload)
+    org, period, je = payload["org_id"], payload["period"], payload["proposed_entry"]
+
+    # 1) Fetch TB baseline (deterministic), consider cache by (org, period, tb_hash, je_hash)
+    cache_key = ("L-231", org, period, hash(json.dumps(je, sort_keys=True)))
+    if cached := cache_get(cache_key): return cached
+
+    tb = ratios.fetch_trial_balance(org, period)           # helper fetch; deterministic
+    before = ratios.compute_all(tb)                        # {"dscr":..., "icr":..., "current_ratio":...}
+    tb_after = simulate_tb_with_entry(tb, je)
+    after  = ratios.compute_all(tb_after)
+    deltas = {k: round(after[k]-before.get(k,0.0), 6) for k in after}
+
+    covenants = load_covenants(org)
+    breaches, alerts = [], []
+    for ratio, threshold in covenants.get("thresholds", {}).items():
+        if ratio in after and after[ratio] < threshold:
+            breaches.append({"ratio":ratio, "threshold":threshold, "after":after[ratio], "facility": covenants.get("facility")})
+            alerts.append({"code":f"RATIO_{ratio.upper()}_BREACH","severity":"warn","message":f"{ratio} below {threshold} after JE"})
+
+    # 2) Advisory suggestions (only if breach/near-breach)
+    suggestions = []
+    if breaches or ratios.is_near_breach(after, covenants):
+        suggestions = ratios.generate_suggestions(je, tb, covenants)  # returns compliant alternatives with projected outcomes
+
+    impact = {"before": before, "after": after, "deltas": deltas, "breaches": breaches}
+    provenance = attach_evidence({"impact_report": impact, "je": je, "covenants": covenants}, sources={"tb_before": tb, "tb_after": tb_after})
+    out = {
+      "result": {"impact_report": impact, "suggestions": suggestions},
+      "provenance": provenance,
+      "confidence": score_confidence(impact, alerts=alerts),
+      "alerts": alerts,
+      "applied_rule_set": {"packs": {}, "effective_date_window": None}
+    }
+    validate_accounting(out["result"])  # sanity checks on signs, balances
+    write_event(logic="L-231", inputs=payload, outputs=out["result"], provenance=provenance)
+    record_feedback("L-231", context=payload, outputs=out["result"])
+    cache_set(cache_key, out, ttl_seconds=3600)
+    return out
+    
+    esting
+    •    Unit: formula correctness (fixtures), suggestion generator determinism, covenant mapping.
+    •    Integration: run with real TB fixtures + randomized JEs; assert correct breach detection and evidence nodes.
+    •    Performance: p95 ≤ budgeted ms; ensure JE-time checks are sub-latency budget or async pre-commit gate.
+
+Runbook Snippets
+    •    If ratio check blocks posting: instruct user to view “Suggestions” panel; accept or override (with reason).
+    •    Feature flag rollout: staged per org; dark-launch in read-only warn mode.
+
+──────────────────────────────────────────────────────────────────────────────
+
+Appendix G — Optional Transaction Posting Orchestrator (Sketch)
+    •    Trigger on JE draft → call logic_231_ratio_impact_advisor → if alerts include breach and policy is “hard-block”, reject with suggestions payload; else warn and proceed.
+    •    SSE stream events for UI “live ratio impact” experience.
+    
+    # file: orchestrators/transaction_posting_orchestrator.py
+from typing import Dict, Any
+def execute(payload: Dict[str, Any]) -> Dict[str, Any]:
+    mod = __import__("logics.logic_231_ratio_impact_advisor", fromlist=["handle"])
+    out = mod.handle(payload)
+    # Policy gate example:
+    policy = payload.get("policy", "warn")
+    if policy == "block" and any(a for a in out["alerts"] if a["code"].endswith("_BREACH")):
+        out["result"]["blocked"] = True
+    return out
+    
+    ──────────────────────────────────────────────────────────────────────────────

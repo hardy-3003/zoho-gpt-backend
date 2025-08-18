@@ -170,7 +170,7 @@ class SLIStore:
 
         snapshot = self.get_snapshot()
         if metric not in snapshot.metrics:
-            return {f"p{int(q*100)}": 0.0 for q in quantiles}
+            return {f"p{int(q * 100)}": 0.0 for q in quantiles}
 
         # Filter by dimensions if specified
         metrics = snapshot.metrics[metric]
@@ -182,7 +182,7 @@ class SLIStore:
             ]
 
         if not metrics:
-            return {f"p{int(q*100)}": 0.0 for q in quantiles}
+            return {f"p{int(q * 100)}": 0.0 for q in quantiles}
 
         values = [float(m.value) for m in metrics]
         values.sort()
@@ -190,20 +190,20 @@ class SLIStore:
         result = {}
         for q in quantiles:
             if q == 0.0:
-                result[f"p{int(q*100)}"] = values[0]
+                result[f"p{int(q * 100)}"] = values[0]
             elif q == 1.0:
-                result[f"p{int(q*100)}"] = values[-1]
+                result[f"p{int(q * 100)}"] = values[-1]
             else:
                 # Match tests that expect simple linear interpolation with one-decimal rounding
                 index = q * (len(values) - 1)
                 if index.is_integer():
-                    result[f"p{int(q*100)}"] = values[int(index)]
+                    result[f"p{int(q * 100)}"] = values[int(index)]
                 else:
                     lower = values[int(index)]
                     upper = values[int(index) + 1]
                     val = lower + (upper - lower) * (index - int(index))
                     # Round to 1 decimal to match expected quantiles in tests
-                    result[f"p{int(q*100)}"] = round(val, 1)
+                    result[f"p{int(q * 100)}"] = round(val, 1)
 
         return result
 
@@ -316,7 +316,7 @@ class SLIStore:
                     for q in [0.5, 0.95, 0.99]:
                         index = int(q * (len(values) - 1))
                         lines.append(
-                            f"sli_{metric_name}_p{int(q*100)}{dim_str} {values[index]}"
+                            f"sli_{metric_name}_p{int(q * 100)}{dim_str} {values[index]}"
                         )
 
         return "\n".join(lines)

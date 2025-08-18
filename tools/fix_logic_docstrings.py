@@ -170,7 +170,7 @@ def main():
     ok = sum(1 for c in changes if c["action"] == "ok")
     print({"files": len(changes), "inserted": added, "updated": updated, "ok": ok})
     for c in changes:
-        print(f'{c["action"]:>16}  {c["file"]}')
+        print(f"{c['action']:>16}  {c['file']}")
 
 
 if __name__ == "__main__":

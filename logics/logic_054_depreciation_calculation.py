@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Depreciation Calculation
@@ -53,9 +59,9 @@ def _validate_depreciation(result: Dict[str, Any]) -> List[str]:
         rate = float(a.get("rate_pct", 0.0) or 0.0)
         amt = float(a.get("depr_amount", 0.0) or 0.0)
         if amt < 0:
-            alerts.append(f"negative_depreciation:{a.get('asset','')}")
+            alerts.append(f"negative_depreciation:{a.get('asset', '')}")
         if rate <= 0 or rate > 100:
-            alerts.append(f"rate_out_of_bounds:{a.get('asset','')}")
+            alerts.append(f"rate_out_of_bounds:{a.get('asset', '')}")
         sum_amt += amt
     if abs(sum_amt - total) > 0.01:
         alerts.append("totals_mismatch")
@@ -248,26 +254,13 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output

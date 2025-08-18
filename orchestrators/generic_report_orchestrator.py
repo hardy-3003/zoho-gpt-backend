@@ -58,7 +58,6 @@ def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput
         org_id=input.org_id,
         keywords_count=len(logic_keywords),
     ):
-
         # Route telemetry logs through this module's patched logger during tests
         try:
             from helpers import telemetry as _telemetry
@@ -80,7 +79,6 @@ def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput
             with span(
                 "generic_keyword", run_id=run_id, dag_node_id=dag_node_id, keyword=kw
             ):
-
                 op = route(kw)
                 if op is None:
                     missing.append(kw)

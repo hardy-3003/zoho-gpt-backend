@@ -23,10 +23,12 @@ LOGIC_MODULES = [
     ("logics.logic_120_cross_period_adjustment_tracker", "L-120"),
 ]
 
+
 def _call(mod_name):
     m = importlib.import_module(mod_name)
     fn = getattr(m, "handle")
     return fn({"period": "2025-06", "sample_size": 5})
+
 
 def test_wave8_contract_shape():
     for mod, _ in LOGIC_MODULES:

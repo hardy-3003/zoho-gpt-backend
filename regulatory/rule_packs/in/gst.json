@@ -1,0 +1,22 @@
+{
+  "versions": [
+    {
+      "effective_from": "2024-01-01",
+      "effective_to": "2024-12-31",
+      "data": {
+        "return_status_values": ["filed", "pending", "late"],
+        "itc_rules": {"eligibility_window_days": 180}
+      }
+    },
+    {
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "data": {
+        "return_status_values": ["filed", "pending", "late", "amended"],
+        "itc_rules": {"eligibility_window_days": 300}
+      }
+    }
+  ]
+}
+
+

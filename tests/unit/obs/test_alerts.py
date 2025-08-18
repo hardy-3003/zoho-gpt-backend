@@ -504,7 +504,10 @@ class TestAlertIntegration:
         # Create anomalous data
         for i in range(20):
             detect_anomaly(
-                "test_metric", 1000.0 + i, "test_org", "test_logic"  # Normal range
+                "test_metric",
+                1000.0 + i,
+                "test_org",
+                "test_logic",  # Normal range
             )
 
         # Add anomalous value

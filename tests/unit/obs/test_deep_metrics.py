@@ -359,7 +359,10 @@ class TestMetricsIntegration:
 
         # Add anomalous metric
         anomaly_result = detect_anomaly(
-            "test_metric", 10000.0, "test_org", "test_logic"  # Very high latency
+            "test_metric",
+            10000.0,
+            "test_org",
+            "test_logic",  # Very high latency
         )
 
         # Should detect anomaly

@@ -1,0 +1,1 @@
+{"requests_total":{"surface=rest":30,"surface=sse":20,"surface=cli":16},"exec_calls_total":{"logic=logic_001_profit_loss":35,"logic=logic_231_ratio_impact_advisor":6,"logic=invalid_logic":2,"logic=logic_099_example_generic":2}}

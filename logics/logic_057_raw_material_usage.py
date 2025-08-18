@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Raw Material Usage
@@ -54,10 +60,10 @@ def _validate_rm_usage(result: Dict[str, Any]) -> List[str]:
         std = m.get("std_qty")
         var = m.get("variance")
         if used < 0:
-            alerts.append(f"negative_qty:{m.get('item','')}")
+            alerts.append(f"negative_qty:{m.get('item', '')}")
         if std is not None and var is not None:
             if abs(var - (used - float(std))) > 0.01:
-                alerts.append(f"variance_mismatch:{m.get('item','')}")
+                alerts.append(f"variance_mismatch:{m.get('item', '')}")
         sum_used += used
     if abs(sum_used - total) > 0.01:
         alerts.append("totals_mismatch")
@@ -250,26 +256,13 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output

@@ -12,7 +12,10 @@ LOGIC_MODULES = [
     ("logics.logic_149_audit_flag_generator_ai_marked_high_risk_areas", "L-149"),
     ("logics.logic_150_ca_review_ready_index", "L-150"),
     ("logics.logic_151_audit_automation_wizard_step_by_step_walkthrough", "L-151"),
-    ("logics.logic_152_auto_fill_for_common_journal_entries_ai_trained_on_history", "L-152"),
+    (
+        "logics.logic_152_auto_fill_for_common_journal_entries_ai_trained_on_history",
+        "L-152",
+    ),
     ("logics.logic_153_period_lock_and_unlock_tracker", "L-153"),
     ("logics.logic_154_custom_rule_builder_for_clients_using_saas_version", "L-154"),
     ("logics.logic_155_cfo_dashboard_generator", "L-155"),
@@ -23,10 +26,12 @@ LOGIC_MODULES = [
     ("logics.logic_160_custom_user_access_logs_and_abuse_detection", "L-160"),
 ]
 
+
 def _call(mod_name):
     m = importlib.import_module(mod_name)
     fn = getattr(m, "handle")
     return fn({"period": "2025-06", "sample_size": 5})
+
 
 def test_wave10_contract_shape():
     for mod, _ in LOGIC_MODULES:

@@ -34,9 +34,7 @@ from helpers.provenance import make_provenance
 from helpers.schema_registry import validate_output_contract
 
 LOGIC_ID = "{}"
-""".format(
-        logic_id
-    )
+""".format(logic_id)
 
     # Create the L4 wrapper function
     wrapper = """
@@ -77,9 +75,7 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     }}
     validate_output_contract(output)
     return output
-""".format(
-        compute_func
-    )
+""".format(compute_func)
 
     # Insert imports after existing imports
     import_pattern = r"(from typing import[^\n]*\n)"

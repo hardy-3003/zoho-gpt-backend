@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Fixed Asset Register
@@ -54,9 +60,9 @@ def _validate_far(result: Dict[str, Any]) -> List[str]:
         acc = float(a.get("acc_depr", 0.0) or 0.0)
         nbv = float(a.get("nbv", cost - acc))
         if abs(nbv - (cost - acc)) > 0.01:
-            alerts.append(f"nbv_mismatch:{a.get('asset','')}")
+            alerts.append(f"nbv_mismatch:{a.get('asset', '')}")
         if cost < 0 or acc < 0 or nbv < 0:
-            alerts.append(f"negative_values:{a.get('asset','')}")
+            alerts.append(f"negative_values:{a.get('asset', '')}")
         sum_nbv += nbv
     if abs(sum_nbv - total_nbv) > 0.01:
         alerts.append("totals_mismatch")
@@ -251,26 +257,13 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output

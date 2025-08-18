@@ -97,7 +97,6 @@ def run_mis(
         use_dag=use_dag,
         max_workers=max_workers,
     ):
-
         # Ensure logic registry is ready for fallback discovery
         if not LOGIC_REGISTRY:
             try:
@@ -127,7 +126,6 @@ def _run_mis_sequential(
         with span(
             "sequential_section", run_id=run_id, dag_node_id=dag_node_id, section=sec
         ):
-
             op = route(sec)
             if op is not None:
                 try:

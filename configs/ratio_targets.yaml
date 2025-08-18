@@ -1,0 +1,146 @@
+# Ratio Targets Configuration
+# Internal targets to drive alerts and suggestions
+# Used by logic_231_ratio_impact_advisor for advisory recommendations
+
+# Default internal targets (more conservative than covenants)
+default:
+  targets:
+    dscr: 2.00          # Target DSCR (higher than covenant 1.50)
+    icr: 4.00           # Target ICR (higher than covenant 3.00)
+    current_ratio: 1.50 # Target current ratio (higher than covenant 1.25)
+    quick_ratio: 1.25   # Target quick ratio (higher than covenant 1.00)
+    de_ratio: 0.75      # Target debt-to-equity (lower than covenant 1.00)
+    working_capital: 500000  # Target working capital in currency units
+  
+  # Improvement targets (what we aim for)
+  improvement_targets:
+    dscr_improvement: 0.25      # Aim to improve DSCR by 0.25
+    icr_improvement: 0.50       # Aim to improve ICR by 0.50
+    current_ratio_improvement: 0.10  # Aim to improve current ratio by 0.10
+    quick_ratio_improvement: 0.15    # Aim to improve quick ratio by 0.15
+    de_ratio_reduction: 0.10    # Aim to reduce debt-to-equity by 0.10
+  
+  # Alert thresholds for internal targets
+  alert_thresholds:
+    warning_pct: 0.90   # Warn when at 90% of target
+    critical_pct: 0.80  # Critical when at 80% of target
+
+# Organization-specific targets
+org_60020606976:
+  targets:
+    dscr: 2.25          # Higher target for this org
+    icr: 4.50
+    current_ratio: 1.60
+    quick_ratio: 1.30
+    de_ratio: 0.70
+    working_capital: 750000
+  
+  improvement_targets:
+    dscr_improvement: 0.30
+    icr_improvement: 0.60
+    current_ratio_improvement: 0.15
+    quick_ratio_improvement: 0.20
+    de_ratio_reduction: 0.15
+  
+  alert_thresholds:
+    warning_pct: 0.85
+    critical_pct: 0.75
+
+# Industry-specific targets
+industry_manufacturing:
+  targets:
+    dscr: 1.80          # Manufacturing typically has lower DSCR
+    icr: 3.50
+    current_ratio: 1.40
+    quick_ratio: 1.10
+    de_ratio: 0.80
+    working_capital: 600000
+  
+  improvement_targets:
+    dscr_improvement: 0.20
+    icr_improvement: 0.40
+    current_ratio_improvement: 0.08
+    quick_ratio_improvement: 0.12
+    de_ratio_reduction: 0.08
+
+industry_services:
+  targets:
+    dscr: 2.50          # Services typically have higher DSCR
+    icr: 5.00
+    current_ratio: 1.60
+    quick_ratio: 1.40
+    de_ratio: 0.60
+    working_capital: 400000
+  
+  improvement_targets:
+    dscr_improvement: 0.35
+    icr_improvement: 0.70
+    current_ratio_improvement: 0.12
+    quick_ratio_improvement: 0.18
+    de_ratio_reduction: 0.12
+
+industry_retail:
+  targets:
+    dscr: 1.60          # Retail has seasonal variations
+    icr: 3.00
+    current_ratio: 1.30
+    quick_ratio: 0.90
+    de_ratio: 0.90
+    working_capital: 300000
+  
+  improvement_targets:
+    dscr_improvement: 0.15
+    icr_improvement: 0.30
+    current_ratio_improvement: 0.05
+    quick_ratio_improvement: 0.08
+    de_ratio_reduction: 0.05
+
+# Seasonal adjustments
+seasonal_adjustments:
+  q4_retail:
+    description: "Q4 retail season (higher inventory, lower cash)"
+    applicable_industries: ["retail"]
+    period: "Q4"
+    adjustments:
+      current_ratio: -0.10
+      quick_ratio: -0.15
+      working_capital: -100000
+  
+  q1_manufacturing:
+    description: "Q1 manufacturing (post-holiday slowdown)"
+    applicable_industries: ["manufacturing"]
+    period: "Q1"
+    adjustments:
+      dscr: -0.20
+      icr: -0.30
+      working_capital: -50000
+
+# Suggestion priorities
+suggestion_priorities:
+  high:
+    description: "High impact, easy to implement"
+    examples:
+      - "Defer non-essential expenses"
+      - "Accelerate receivables collection"
+      - "Negotiate extended payment terms"
+  
+  medium:
+    description: "Medium impact, moderate effort"
+    examples:
+      - "Refinance high-cost debt"
+      - "Optimize inventory levels"
+      - "Restructure payment schedules"
+  
+  low:
+    description: "Low impact, high effort"
+    examples:
+      - "Major operational restructuring"
+      - "Asset sales"
+      - "Equity infusion"
+
+# Learning parameters
+learning:
+  suggestion_acceptance_threshold: 0.70  # 70% acceptance rate for good suggestions
+  improvement_tracking_period: 90        # Track improvements over 90 days
+  confidence_decay_rate: 0.95           # Decay confidence by 5% per period
+  min_confidence_threshold: 0.30        # Minimum confidence to make suggestions

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/consent/consent.schema.json",
+  "title": "Consent Object",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "subject",
+    "scope",
+    "purpose",
+    "created_at",
+    "expires_at",
+    "retention_days"
+  ],
+  "properties": {
+    "consent_id": {
+      "type": "string",
+      "description": "Deterministic identifier for the consent record (optional)"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Subject identifier. Example: ORG:60020606976 or PERSON:<id>",
+      "minLength": 3
+    },
+    "subject_type": {
+      "type": "string",
+      "description": "Type of subject (ORG|PERSON)",
+      "enum": ["ORG", "PERSON"],
+      "default": "ORG"
+    },
+    "scope": {
+      "type": "array",
+      "description": "List of granted scopes",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9_.:]+(\\.[a-z0-9_.:]+)*$"
+      }
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Purpose string such as compliance_reconciliation",
+      "minLength": 3
+    },
+    "lawful_basis": {
+      "type": ["string", "null"],
+      "description": "Lawful basis note or policy key",
+      "minLength": 2
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of consent capture"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when consent expires"
+    },
+    "retention_days": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of days to retain fetched artifacts/data under this consent"
+    },
+    "revoked_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when consent was revoked (if any)"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional non-PII metadata about the consent capture",
+      "additionalProperties": true
+    }
+  }
+}
+
+

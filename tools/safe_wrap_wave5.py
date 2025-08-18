@@ -93,9 +93,7 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
 # Export wrapper as the official handler
 def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     return handle_l4(payload)
-""".lstrip(
-    "\n"
-)
+""".lstrip("\n")
 
 
 def list_targets(root="logics", r=None):

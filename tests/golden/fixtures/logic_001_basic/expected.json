@@ -1,0 +1,49 @@
+{
+  "logic_output": {
+    "result": {
+      "sections": {
+        "expenses": {
+          "amount": 800000
+        },
+        "sales": {
+          "amount": 1000000
+        }
+      },
+      "totals": {
+        "cogs": 600000,
+        "ebit": 200000,
+        "gross_profit": 400000,
+        "opex": 200000,
+        "revenue": 1000000
+      }
+    },
+    "provenance": {
+      "computation": [
+        "evidence://compute/contract/stubbed"
+      ],
+      "source_data": [
+        "evidence://logic_001_profit_loss/60020606976/2025-01/stubbed"
+      ],
+      "validation": [
+        "evidence://validate/logic_001_profit_loss/contract"
+      ]
+    },
+    "confidence": 0.95,
+    "alerts": [],
+    "applied_rule_set": {
+      "packs": {},
+      "effective_date_window": null
+    },
+    "explanation": "Contract-phase stubbed response for logic_001_profit_loss"
+  },
+  "execution_time_ms": 0.0,
+  "cache_hit": false,
+  "metadata": {
+    "contract_version": "1.0",
+    "logic_id": "logic_001_profit_loss",
+    "org_id": "60020606976",
+    "period": "2025-01"
+  }
+}
+
+

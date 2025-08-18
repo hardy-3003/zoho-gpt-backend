@@ -1,0 +1,12 @@
+{
+  "case": "logic_001_basic",
+  "description": "Replay of logic_001 contract-only stub using minimal ExecuteRequest",
+  "input_path": "input.json",
+  "notes": [
+    "Closed-period, contract-only stub (no external I/O)",
+    "Hash computed from canonical JSON of ExecuteResponse"
+  ],
+  "evidence_refs": []
+}
+
+

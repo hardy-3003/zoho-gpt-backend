@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Upcoming Bill Payments
@@ -57,9 +63,9 @@ def _validate_upcoming_bills(result: Dict[str, Any]) -> List[str]:
         alerts.append("amount_total_mismatch")
     for b in bills:
         if int(b.get("days_to_due", 0) or 0) < -365:
-            alerts.append(f"days_to_due_out_of_bounds:{b.get('bill','')}")
+            alerts.append(f"days_to_due_out_of_bounds:{b.get('bill', '')}")
         if int(b.get("days_to_due", 0) or 0) < 0:
-            alerts.append(f"overdue:{b.get('bill','')}")
+            alerts.append(f"overdue:{b.get('bill', '')}")
     return alerts
 
 
@@ -258,26 +264,13 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output

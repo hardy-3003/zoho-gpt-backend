@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Inventory Valuation
@@ -54,11 +60,11 @@ def _validate_inventory_valuation(result: Dict[str, Any]) -> List[str]:
         rate = float(it.get("rate", 0.0) or 0.0)
         val = float(it.get("value", qty * rate))
         if abs(val - (qty * rate)) > 0.01:
-            alerts.append(f"value_mismatch:{it.get('item','')}")
+            alerts.append(f"value_mismatch:{it.get('item', '')}")
         if qty < 0:
-            alerts.append(f"negative_qty:{it.get('item','')}")
+            alerts.append(f"negative_qty:{it.get('item', '')}")
         if rate < 0 or val < 0:
-            alerts.append(f"negative_value:{it.get('item','')}")
+            alerts.append(f"negative_value:{it.get('item', '')}")
         sum_val += val
     if abs(sum_val - total_val) > 0.01:
         alerts.append("totals_mismatch")
@@ -251,26 +257,13 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output

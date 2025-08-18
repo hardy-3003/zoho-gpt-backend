@@ -24,10 +24,12 @@ LOGIC_MODULES = [
     ("logics.logic_080_duplicate_invoice_detection", "L-080"),
 ]
 
+
 def _call(mod_name):
     m = importlib.import_module(mod_name)
     fn = getattr(m, "handle")
     return fn({"period": "2025-06", "sample_size": 5})
+
 
 def test_wave6_contract_shape():
     # allow missing modules; enforce shape where present

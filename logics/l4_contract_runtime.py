@@ -325,7 +325,12 @@ def handle_l4_with_telemetry(
         # Extract L4 components
         if isinstance(result, dict):
             # Handle L4 contract format
-            if "result" not in result or "provenance" not in result or "confidence" not in result or "alerts" not in result:
+            if (
+                "result" not in result
+                or "provenance" not in result
+                or "confidence" not in result
+                or "alerts" not in result
+            ):
                 # Convert non-L4 dicts to L4 envelope
                 result = {
                     "result": result,

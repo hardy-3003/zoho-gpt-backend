@@ -16,6 +16,12 @@ import json, os
 from core.logic_loader import load_all_logics, plan_from_query
 from orchestrators.mis_orchestrator import NodeSpec, run_dag
 
+# Import API routers
+from app.api.execute import router as execute_router
+from app.api.sse import router as sse_router
+from app.api.webhooks import router as webhooks_router
+from app.api.metrics import router as metrics_router
+
 # Import modules for side-effects so they self-register in the registry
 # (do not remove even if they look unused)
 import operate.salary_operate  # noqa: F401
@@ -32,6 +38,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# === Include API Routers ===
+app.include_router(execute_router)
+app.include_router(sse_router)
+app.include_router(webhooks_router)
+app.include_router(metrics_router)
 
 # === Constants ===
 CREDENTIALS_FILE = "zoho_credentials.json"

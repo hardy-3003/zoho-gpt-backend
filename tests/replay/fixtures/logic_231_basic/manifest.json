@@ -1,0 +1,12 @@
+{
+  "case": "logic_231_basic",
+  "description": "Replay of logic_231 contract-only stub for Ratio Impact Advisor",
+  "input_path": "input.json",
+  "notes": [
+    "Closed-period, contract-only stub (no external I/O)",
+    "Hash computed from canonical JSON of ExecuteResponse"
+  ],
+  "evidence_refs": []
+}
+
+

@@ -6,3 +6,20 @@ pydantic>=2.7
 requests>=2.31
 pytest>=8
 psutil>=5.9
+jsonschema>=4.21.0
+
+# Linting and quality tools
+ruff>=0.3.0
+black>=24.0.0
+mypy>=1.8.0
+bandit>=1.7.0
+safety>=2.3.0
+
+# SBOM and dependency tools
+cyclonedx-python-lib>=4.0.0
+pip-licenses>=4.0.0
+
+# Additional testing tools
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+pytest-watch>=4.2.0

@@ -14,7 +14,9 @@ try:
     from analyzers.delta_compare import period_delta  # type: ignore
 except Exception:  # pragma: no cover
 
-    def period_delta(current: Dict[str, Any], previous: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
+    def period_delta(
+        current: Dict[str, Any], previous: Dict[str, Any]
+    ) -> Dict[str, Any]:  # type: ignore
         return {}
 
 

@@ -1,6 +1,6 @@
-# AGENT_EDIT_PROTOCOL.md — V6 (Execution-Ready)
+# AGENT_EDIT_PROTOCOL.md — V7 (Execution-Ready)
 
-Effective Date: 2025-08-15  
+Effective Date: 2025-08-18  
 Owner: hardy-3003  
 
 ---
@@ -18,6 +18,7 @@ Owner: hardy-3003
 - Before editing `task.md`, perform a full repo audit and convert gaps into tasks placed in Phase ≤ first consumer. Record audit summary in `log.md`.
 - Maintain a Traceability Matrix at the end of `task.md` mapping each MASTER scope item to Task IDs.
 - All tasks in `task.md` must contain: Title, Why, Inputs/Prereqs, Steps, Deliverables, DoD, Acceptance Criteria, Owner/Role, Duration, Risks/Mitigation, Assumptions/Decisions, Traceability IDs.
+- **Enforce full coverage of **231 logics**. Explicitly include **L-231 Ratio Impact Advisor**, `/helpers/ratios.py`, `/configs/bank_covenants.yaml`, and `/configs/ratio_targets.yaml`.
 
 ---
 
@@ -26,6 +27,7 @@ Owner: hardy-3003
 - No forward dependencies. If found, pull enablers forward.
 - Cross-phase linking tests must be added for interactions with earlier phases. Resolve issues before marking complete.
 - Definition of Done: code compiles, tests added/updated and pass, contracts honored, docs updated, no TODO/FIXME left, surfaces parity verified.
+- If JE-time checks are enabled, `transaction_posting_orchestrator.py` must be delivered in Phase 2 with deterministic ratio covenant enforcement.
 
 ---
 
@@ -42,6 +44,7 @@ Owner: hardy-3003
 10. External Data Integration: support GSTN, ITD, banks, POS; operate in MCP and non-MCP modes.
 11. Self-Observation & Data Retention: track metrics/anomalies, maintain baselines, propose optimizations.
 12. ID Collision Policy: respect reserved ID ranges, ensure uniqueness.
+13. Deterministic Ratio Guardrails** — All JE-time posting checks must simulate pre/post ratios, enforce covenant thresholds from configs, attach evidence nodes, and advise alternatives.
 
 ---
 
@@ -64,6 +67,11 @@ Owner: hardy-3003
     - Why change was required.
     - Related tasks/dependencies validated.
 - End-of-phase summary in `log.md`: completed tasks, pending tasks with reasons, risks/follow-ups, confirmation of cross-phase linking test success.
+- Evidence nodes must include:  
+  - Trial Balance hash before/after JE.  
+  - Covenant profile hash (from `/configs/bank_covenants.yaml`).  
+  - JE payload hash.  
+  - Simulation outputs of breached ratios.
 
 ---
 
@@ -78,6 +86,10 @@ Owner: hardy-3003
 - Unit & integration tests ≥ 95% pass rate.
 - MCP vs non-MCP parity where relevant.
 - Cross-module interactions require integration tests in the same phase.
+- Add ratio-specific SLOs:  
+  - `ratio_sim_latency_ms` (p95 ≤ budget).  
+  - `ratio_breach_count` (must be monitored & alert if > threshold).  
+  - `suggestion_accept_rate` tracked for advisory effectiveness.
 
 ---
 
@@ -110,6 +122,7 @@ Owner: hardy-3003
 - Cross-phase linking tests passed.
 - L4 standards satisfied.
 - Repo stable, docs updated, ready for next phase.
+- Explicitly verify coverage is **231/231** (not 230), with L-231 Ratio Impact Advisor and ratio covenant configs/helpers present.
 
 ---
 

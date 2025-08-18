@@ -23,10 +23,12 @@ LOGIC_MODULES = [
     ("logics.logic_100_risk_assessment_matrix", "L-100"),
 ]
 
+
 def _call(mod_name):
     m = importlib.import_module(mod_name)
     fn = getattr(m, "handle")
     return fn({"period": "2025-06", "sample_size": 5})
+
 
 def test_wave7_contract_shape():
     # allow missing modules; enforce shape where present

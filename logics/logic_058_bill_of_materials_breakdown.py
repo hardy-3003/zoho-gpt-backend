@@ -1,4 +1,10 @@
-from logics.l4_contract_runtime import make_provenance, score_confidence, validate_output_contract, validate_accounting, log_with_deltas_and_anomalies
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
 
 """
 Title: Bill Of Materials Breakdown
@@ -49,9 +55,9 @@ def _validate_bom(result: Dict[str, Any]) -> List[str]:
     bom = result.get("bom", [])
     for r in bom:
         if float(r.get("std_qty", 0.0) or 0.0) <= 0:
-            alerts.append(f"std_qty_non_positive:{r.get('product','')}")
+            alerts.append(f"std_qty_non_positive:{r.get('product', '')}")
         if not r.get("uom"):
-            alerts.append(f"missing_uom:{r.get('product','')}")
+            alerts.append(f"missing_uom:{r.get('product', '')}")
     return alerts
 
 
@@ -242,26 +248,13 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
         "provenance": prov,
         "confidence": confidence,
         "alerts": alerts,
-    
         "meta": {
-
-    
-                    **LOGIC_META,
-
-    
-                    "strategy": "l4-v0",
-
-    
-                    "org_id": payload.get("org_id", "unknown"),
-
-    
-                    "query": payload.get("query", ""),
-
-    
-                    "notes": [],
-
-    
-                },
+            **LOGIC_META,
+            "strategy": "l4-v0",
+            "org_id": payload.get("org_id", "unknown"),
+            "query": payload.get("query", ""),
+            "notes": [],
+        },
     }
     validate_output_contract(output)
     return output
