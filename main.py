@@ -73,7 +73,7 @@ def get_access_token():
         "client_secret": creds["client_secret"],
         "grant_type": "refresh_token",
     }
-    res = requests.post(url, data=params)
+    res = requests.post(url, data=params, timeout=10)
     if res.status_code != 200:
         raise Exception(f"Failed to refresh Zoho access token: {res.text}")
     token_data = res.json()

@@ -470,7 +470,8 @@ class PatternDetector:
     def _generate_pattern_id(self, query: str, logic_ids: List[str]) -> str:
         """Generate unique pattern ID."""
         content = f"{query}:{','.join(sorted(logic_ids))}"
-        return hashlib.md5(content.encode()).hexdigest()[:12]
+        # Use sha256 for reproducible non-security IDs
+        return hashlib.sha256(content.encode()).hexdigest()[:12]
 
     def _calculate_confidence(self, query: str, logic_ids: List[str]) -> float:
         """Calculate confidence score for a pattern."""

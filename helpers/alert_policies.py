@@ -281,8 +281,8 @@ class AlertManager:
         state_key = f"{policy.id}_{threshold.severity.value}"
         state = self.alert_states[state_key]
 
-        # Generate event ID
-        event_id = hashlib.md5(
+        # Generate event ID (non-security use); prefer sha256 over md5
+        event_id = hashlib.sha256(
             f"{policy.id}_{threshold.severity.value}_{current_time}".encode()
         ).hexdigest()
 
@@ -514,7 +514,7 @@ def evaluate_slo_alerts(slo_results: List[SLOResult]) -> List[AlertEvent]:
 
         for alert in burn_alerts:
             event = AlertEvent(
-                id=hashlib.md5(
+                id=hashlib.sha256(
                     f"slo_{result.spec.id}_{alert['severity']}".encode()
                 ).hexdigest(),
                 policy_id=f"slo_{result.spec.id}",

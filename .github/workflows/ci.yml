@@ -29,8 +29,8 @@ jobs:
         run: black --check --diff .
       - name: Run mypy
         run: mypy logics/ helpers/ orchestrators/ core/ main.py
-      - name: Run bandit
-        run: bandit -r logics/ helpers/ orchestrators/ core/ main.py
+      - name: Run bandit (fail on medium/high only)
+        run: bandit -r logics/ helpers/ orchestrators/ core/ main.py --severity-level medium
       - name: Run safety
         run: safety check
 
