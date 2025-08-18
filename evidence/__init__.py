@@ -3,7 +3,7 @@ Evidence OS - Deterministic, content-addressed evidence storage and verification
 
 This package provides the foundational primitives for evidence-first architecture:
 - Ledger: Append-only, hash-chained record storage
-- Blob Store: Content-addressed artifact storage  
+- Blob Store: Content-addressed artifact storage
 - Signer: Deterministic signing and verification
 
 All components are designed for determinism, replayability, and audit compliance.
@@ -15,9 +15,9 @@ from .signer import EvidenceSigner, SignatureResult
 
 __all__ = [
     "EvidenceLedger",
-    "LedgerRecord", 
+    "LedgerRecord",
     "BlobStore",
     "BlobReference",
     "EvidenceSigner",
-    "SignatureResult"
+    "SignatureResult",
 ]
