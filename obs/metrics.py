@@ -24,7 +24,12 @@ except Exception:  # pragma: no cover
 _lock = Lock()
 _counters: Dict[Tuple[str, Tuple[Tuple[str, str], ...]], int] = {}
 _PERSIST_PATH = Path("data/metrics/counters.json")
-_USE_PERSISTENCE = str(os.getenv("ZOHO_METRICS_PERSIST", "")).lower() in {"1", "true", "yes"}
+_USE_PERSISTENCE = str(os.getenv("ZOHO_METRICS_PERSIST", "")).lower() in {
+    "1",
+    "true",
+    "yes",
+}
+_PERSIST_READ_NAMES = {"requests_total", "exec_calls_total"}
 
 
 def _normalize_labels(labels: Dict[str, str]) -> Tuple[Tuple[str, str], ...]:
@@ -42,8 +47,10 @@ def inc(name: str, labels: Dict[str, str] | None = None) -> None:
 def dump() -> Dict[str, Dict[str, int]]:
     # Emit a stable dict: {name: {"label_kv_serialized": count, ...}, ...}
     snapshot: Dict[str, Dict[str, int]] = {}
-    # Start with persisted counts
+    # Start with persisted counts, but only for whitelisted metric names
     for (name, labels_tuple), count in _persist_load().items():
+        if name not in _PERSIST_READ_NAMES:
+            continue
         label_str = (
             ",".join([f"{k}={v}" for k, v in labels_tuple]) if labels_tuple else ""
         )
@@ -63,8 +70,9 @@ def dump() -> Dict[str, Dict[str, int]]:
 
 
 def _persist_load() -> Dict[Tuple[str, Tuple[Tuple[str, str], ...]], int]:
-    if not _USE_PERSISTENCE:
-        return {}
+    # Always attempt to read persisted counters if the file exists,
+    # regardless of write persistence setting. This allows other
+    # processes (e.g., CLI) to contribute metrics via the shared file.
     try:
         if not _PERSIST_PATH.exists():
             return {}

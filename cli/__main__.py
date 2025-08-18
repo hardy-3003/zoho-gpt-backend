@@ -6,6 +6,7 @@ Task P1.2.5 — /cli runner (contract-only)
 Provides a Python CLI entrypoint `zgpt` with execute command for contract testing.
 """
 
+import os
 import argparse
 import json
 import sys
@@ -25,6 +26,7 @@ from surfaces.contracts import (
     AppliedRuleSet,
 )
 
+os.environ.setdefault("ZOHO_METRICS_PERSIST", "1")
 from obs import metrics as obs_metrics
 from obs import log as obs_log
 

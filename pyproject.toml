@@ -118,6 +118,40 @@ ignore_errors = true
 exclude_dirs = ["tests", "venv"]
 skips = ["B101", "B601"]
 
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+# Explicitly discover flat-layout top-level packages and exclude non-runtime dirs
+include = [
+    "app*",
+    "cli*",
+    "obs*",
+    "core*",
+    "data*",
+    "config*",
+    "configs*",
+    "logics*",
+    "operate*",
+    "helpers*",
+    "consent*",
+    "services*",
+    "surfaces*",
+    "evidence*",
+    "analyzers*",
+    "artifacts*",
+    "dashboards*",
+    "regulatory*",
+    "orchestrators*",
+]
+exclude = [
+    "tests*",
+    "tools*",
+    "scripts*",
+    "htmlcov*",
+    "venv*",
+]
+
 [project.scripts]
 zgpt = "cli.__main__:main"
 
