@@ -64,7 +64,9 @@ def run_generic(input: OperateInput, logic_keywords: List[str]) -> OperateOutput
 
             _telemetry._log = _log
         except Exception as e:
-            logging.getLogger(__name__).warning("Failed to patch telemetry logger in run: %s", e)
+            logging.getLogger(__name__).warning(
+                "Failed to patch telemetry logger in run: %s", e
+            )
 
         # Set telemetry context
         set_org_context(input.org_id)
