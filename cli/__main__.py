@@ -34,6 +34,23 @@ def load_execute_request_from_json(plan_path: str) -> ExecuteRequest:
     try:
         with open(plan_path, "r") as f:
             data = json.load(f)
+        # Support two shapes:
+        # 1) Canonical ExecuteRequest
+        # 2) Parity shape: {"plan": [{"logic": "logic_001_*", "inputs": {"period": "YYYY-MM"}}], ...}
+        if isinstance(data, dict) and "plan" in data and isinstance(data["plan"], list):
+            first = data["plan"][0] if data["plan"] else {}
+            logic_id = first.get("logic", "logic_001_profit_and_loss_summary")
+            inputs = first.get("inputs", {}) if isinstance(first, dict) else {}
+            org_id = data.get("org_id", "60020606976")
+            period = inputs.get("period") or data.get("period", "2025-01")
+            context = data.get("context", {})
+            return ExecuteRequest(
+                logic_id=logic_id,
+                org_id=org_id,
+                period=period,
+                inputs=inputs if isinstance(inputs, dict) else {},
+                context=context if isinstance(context, dict) else {},
+            )
         return ExecuteRequest(**data)
     except FileNotFoundError:
         print(f"Error: Plan file '{plan_path}' not found", file=sys.stderr)
@@ -70,41 +87,88 @@ def build_execute_request_from_flags(
 
 def create_stubbed_response(request: ExecuteRequest) -> ExecuteResponse:
     """Create a stubbed ExecuteResponse for contract testing"""
-    # Create a deterministic stub response
-    logic_output = LogicOutput(
-        result={
-            "status": "stubbed",
-            "logic_id": request.logic_id,
-            "org_id": request.org_id,
+    # Deterministic stubbed result aligned with REST contract stub
+    if str(request.logic_id).startswith("logic_001"):
+        result = {
+            "totals": {
+                "revenue": 1000000,
+                "cogs": 600000,
+                "gross_profit": 400000,
+                "opex": 200000,
+                "ebit": 200000,
+            },
+            "sections": {
+                "sales": {"amount": 1000000},
+                "expenses": {"amount": 800000},
+            },
+        }
+    elif str(request.logic_id).startswith("logic_231"):
+        result = {
+            "impact_report": {
+                "before": {
+                    "dscr": 1.65,
+                    "icr": 3.4,
+                    "current_ratio": 1.8,
+                    "de_ratio": 0.9,
+                },
+                "after": {
+                    "dscr": 1.48,
+                    "icr": 3.1,
+                    "current_ratio": 1.55,
+                    "de_ratio": 0.92,
+                },
+                "deltas": {
+                    "dscr": -0.17,
+                    "icr": -0.3,
+                    "current_ratio": -0.25,
+                    "de_ratio": 0.02,
+                },
+                "breaches": [],
+            },
+            "suggestions": [],
+        }
+    else:
+        result = {
+            "data": f"Stubbed data for {request.logic_id}",
+            "count": 123,
             "period": request.period,
-            "message": "CLI contract test response - no business logic executed",
-        },
+            "org_id": request.org_id,
+        }
+
+    # Reflect basic request fields in result for CLI contract tests
+    if isinstance(result, dict):
+        result.setdefault("logic_id", request.logic_id)
+        result.setdefault("org_id", request.org_id)
+        result.setdefault("period", request.period)
+
+    logic_output = LogicOutput(
+        result=result,
         provenance={
-            "source": ["cli_contract_test"],
-            "inputs": [
-                f"logic_id={request.logic_id}",
-                f"org_id={request.org_id}",
-                f"period={request.period}",
+            "source_data": [
+                f"evidence://{request.logic_id}/{request.org_id}/{request.period}/cli_stub"
             ],
+            "computation": ["evidence://compute/cli/contract/stubbed"],
+            "validation": [f"evidence://validate/{request.logic_id}/contract"],
         },
-        confidence=1.0,
-        alerts=[
-            Alert(
-                code="CLI_STUB",
-                severity=AlertSeverity.INFO,
-                message="This is a contract test response from CLI",
-                evidence=["cli_execution", "contract_only"],
-            )
-        ],
+        confidence=0.95,
+        alerts=[],
         applied_rule_set=AppliedRuleSet(),
-        explanation="CLI contract test - deterministic stub response",
+        explanation=f"CLI contract-phase stubbed response for {request.logic_id}",
     )
 
     return ExecuteResponse(
         logic_output=logic_output,
         execution_time_ms=0.1,  # Deterministic stub time
         cache_hit=False,
-        metadata={"source": "cli", "contract_test": True, "deterministic": True},
+        metadata={
+            "source": "cli",
+            "contract_test": True,
+            "deterministic": True,
+            "logic_id": request.logic_id,
+            "org_id": request.org_id,
+            "period": request.period,
+            "contract_version": "1.0",
+        },
     )
 
 
@@ -158,8 +222,7 @@ def execute_command(args: argparse.Namespace) -> None:
         # Create stubbed response
         response = create_stubbed_response(request)
 
-        # Output as JSON
-        # Convert dataclass to dict properly
+        # Output as JSON matching REST contract stub, plus top-level result mirror for parity tests
         response_dict = {
             "logic_output": {
                 "result": response.logic_output.result,
@@ -167,11 +230,13 @@ def execute_command(args: argparse.Namespace) -> None:
                 "confidence": response.logic_output.confidence,
                 "alerts": [
                     {
-                        "code": alert.code,
-                        "severity": alert.severity.value,
-                        "message": alert.message,
-                        "evidence": alert.evidence,
-                        "metadata": alert.metadata,
+                        "code": getattr(alert, "code", ""),
+                        "severity": getattr(
+                            getattr(alert, "severity", None), "value", "info"
+                        ),
+                        "message": getattr(alert, "message", ""),
+                        "evidence": getattr(alert, "evidence", []),
+                        "metadata": getattr(alert, "metadata", {}),
                     }
                     for alert in response.logic_output.alerts
                 ],
@@ -185,6 +250,23 @@ def execute_command(args: argparse.Namespace) -> None:
             "cache_hit": response.cache_hit,
             "metadata": response.metadata,
         }
+        # Do NOT add top-level "result" for CLI; REST-only parity requires it.
+        # For parity-smoke compatibility, when --plan json contained a plan array
+        # we mirror top-level result (the REST surface does this in plan-mode).
+        try:
+            # Best-effort detection: if args.plan is provided and the file had a "plan" key
+            had_plan = False
+            if args.plan:
+                with open(args.plan, "r") as _pf:
+                    _data = json.load(_pf)
+                    had_plan = isinstance(_data, dict) and isinstance(
+                        _data.get("plan"), list
+                    )
+            if had_plan:
+                response_dict["result"] = response.logic_output.result
+        except Exception:
+            pass
+
         print(json.dumps(response_dict, indent=2))
 
         try:

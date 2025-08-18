@@ -1,0 +1,25 @@
+--- expected.json
++++ actual.json
+@@ -43,5 +43,22 @@
+     "logic_id": "logic_001_profit_loss",
+     "org_id": "60020606976",
+     "period": "2025-01"
++  },
++  "result": {
++    "sections": {
++      "expenses": {
++        "amount": 800000
++      },
++      "sales": {
++        "amount": 1000000
++      }
++    },
++    "totals": {
++      "cogs": 600000,
++      "ebit": 200000,
++      "gross_profit": 400000,
++      "opex": 200000,
++      "revenue": 1000000
++    }
+   }
+ }

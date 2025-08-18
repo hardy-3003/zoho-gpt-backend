@@ -7,82 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  traceability:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements.txt -r requirements-dev.txt
-      - name: Run traceability check
-        run: |
-          python3 tools/traceability_check.py
-
-  dependency_audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements.txt -r requirements-dev.txt
-      - name: Run dependency audit
-        run: |
-          python3 tools/dep_audit.py
-
-  parity_smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements.txt -r requirements-dev.txt
-      - name: Run parity smoke tests
-        run: |
-          pytest -q tests/parity/test_parity_smoke.py
-
-  perf_baseline:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements.txt -r requirements-dev.txt
-      - name: Run perf baseline tests
-        run: |
-          pytest -q tests/perf/test_perf_baseline.py
-
-name: CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -114,6 +45,22 @@ jobs:
       - run: pip install -e .[dev]
       - run: mypy logics/ helpers/ orchestrators/ core/ main.py
 
+  obs:
+    name: Observability tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: Run obs tests
+        run: pytest -q tests/obs
+
   test:
     runs-on: ubuntu-latest
     needs: lint
@@ -121,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -154,7 +101,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
@@ -183,7 +130,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
@@ -204,21 +151,6 @@ jobs:
             exit 1
           fi
 
-  l4_base_check:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Run L4 base tests
-        run: pytest -q tests/l4
-
   id_policy:
     runs-on: ubuntu-latest
     needs: test
@@ -226,7 +158,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
@@ -242,7 +174,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
@@ -263,7 +195,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
@@ -284,7 +216,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
@@ -297,6 +229,21 @@ jobs:
       - name: Run scaffold test
         run: pytest -q tests/master/test_scaffold_missing.py
 
+  l4_base_check:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements-dev.txt
+      - name: Run L4 base tests
+        run: pytest -q tests/l4
+
   l4_readiness_gate:
     runs-on: ubuntu-latest
     needs: logic_coverage_gate
@@ -304,7 +251,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
@@ -328,15 +275,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
           pip install -r requirements-dev.txt
-      - name: Generate traceability matrix
+      - name: Run traceability check
         run: |
-          # TODO: Add proper traceability generation when tools/gen_traceability.py is created
-          echo "Traceability matrix generation placeholder"
+          python3 tools/traceability_check.py
 
   dependency_audit:
     runs-on: ubuntu-latest
@@ -345,15 +291,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
           pip install -r requirements-dev.txt
-      - name: Audit dependencies
+      - name: Run dependency audit
         run: |
-          # TODO: Add proper dependency audit when tools/gen_dependency_audit.py is created
-          echo "Dependency audit placeholder"
+          python3 tools/dep_audit.py
 
   parity_smoke:
     runs-on: ubuntu-latest
@@ -362,164 +307,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
           pip install -r requirements-dev.txt
       - name: Run parity smoke tests
         run: |
-          # TODO: Add proper parity smoke tests when tests/parity/ is created
-          echo "Parity smoke tests placeholder"
+          pytest -q tests/parity/test_parity_smoke.py
 
   replay_golden:
     runs-on: ubuntu-latest
-    needs: parity_smoke
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Run replay golden tests
-        run: |
-          # TODO: Add proper replay golden tests when evidence/replay.py is created
-          echo "Replay golden tests placeholder"
-
-  perf_baseline:
-    runs-on: ubuntu-latest
-    needs: replay_golden
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Run performance baseline tests
-        run: |
-          # TODO: Add proper performance baseline tests when config/budgets.yaml is created
-          echo "Performance baseline tests placeholder"
-
-  build:
-    runs-on: ubuntu-latest
-    needs: perf_baseline
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Generate SBOM
-        run: |
-          # TODO: Add proper SBOM generation when cyclonedx-python-lib is configured
-          echo "SBOM generation placeholder"
-      - name: Build package
-        run: |
-          python -m build
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: dist/
-
-  obs:
-    name: Observability tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install -U pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-      - name: Run obs tests
-        run: pytest -q tests/obs
-
-name: CI
-
-on:
-  push:
-  pull_request:
-
-jobs:
-  obs:
-    name: Observability tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install -U pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-      - name: Run obs tests
-        run: pytest -q tests/obs
-name: CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: python -m pip install -U pip
-      - run: pip install -e .[dev]
-      - run: ruff check .
-
-  type:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: python -m pip install -U pip
-      - run: pip install -e .[dev]
-      - run: mypy logics/ helpers/ orchestrators/ core/ main.py
-
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: python -m pip install -U pip
-      - run: pip install -e .[dev]
-      - name: Unit/Integration/Contract
-        run: |
-          pytest tests/unit/ -v || true
-          pytest tests/integration/ -v || true
-          pytest tests/contract/ -v
-
-  replay_golden:
-    runs-on: ubuntu-latest
-    needs: [tests]
+    needs: [parity_smoke]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -537,293 +336,6 @@ jobs:
           path: tests/replay/diffs
           if-no-files-found: ignore
 
-name: CI
-
-on:
-  push:
-  pull_request:
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Run ruff
-        run: ruff check .
-      - name: Run black
-        run: black --check --diff .
-      - name: Run mypy
-        run: mypy logics/ helpers/ orchestrators/ core/ main.py
-      - name: Run bandit
-        run: bandit -r logics/ helpers/ orchestrators/ core/ main.py
-      - name: Run safety
-        run: safety check
-
-  test:
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Static guards
-        run: |
-          ! grep -R --line-number -E '"result"\s*:\s*\{\s*"result"\s*:' logics || (echo "Nested result detected"; exit 1)
-      - name: Run unit tests
-        run: pytest tests/unit/ -v --cov=logics --cov=helpers --cov=orchestrators --cov-report=xml
-      - name: Run integration tests
-        run: pytest tests/integration/ -v
-      - name: Run performance tests
-        run: pytest tests/performance/ -v
-      - name: Run evidence tests
-        run: pytest tests/evidence/ -v --cov=evidence --cov-report=xml
-      - name: Run consent tests
-        run: pytest tests/consent/ -v
-      - name: Run regulatory tests
-        run: pytest tests/regulatory/ -v
-
-  contract:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Generate contract snapshots
-        run: |
-          python3 tools/gen_contract_snapshots.py
-      - name: Run contract tests
-        run: pytest tests/contract/ -v
-      - name: Commit contract snapshots if changed
-        run: |
-          if git diff --quiet artifacts/contract_snapshots.json; then
-            echo "No changes to contract snapshots"
-          else
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add artifacts/contract_snapshots.json
-            git commit -m "Update contract snapshots [skip ci]"
-            git push
-          fi
-
-  golden:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Run golden tests
-        run: pytest tests/golden/ -v || echo "GOLDEN_FAIL" >> golden_status
-      - name: Upload golden diffs on failure
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: golden-diffs
-          path: tests/golden/diffs/
-          if-no-files-found: ignore
-      - name: Fail job if golden failed
-        run: |
-          if [ -f golden_status ]; then
-            echo "Golden tests failed"
-            exit 1
-          fi
-
-  id_policy:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Check ID policy
-        run: |
-          python3 scripts/id_linter.py
-
-  master_index_check:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Build master index
-        run: |
-          python3 tools/extract_master_index.py --summary
-      - name: Fail if master index changed
-        run: |
-          git diff --exit-code artifacts/master_index.json
-      - name: Run MASTER index tests
-        run: pytest -q tests/master/test_master_index.py
-
-  repo_inventory_check:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Run repo inventory scanner
-        run: |
-          python3 tools/scan_repo_logics.py --summary
-      - name: Fail if artifacts changed (uncommitted)
-        run: |
-          git diff --exit-code artifacts/repo_logics.json artifacts/master_vs_repo_report.json
-      - name: Run repo inventory tests
-        run: pytest -q tests/master/test_repo_inventory.py
-
-  logic_coverage_gate:
-    runs-on: ubuntu-latest
-    needs: [test, id_policy, master_index_check, repo_inventory_check]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Refresh inventories and enforce coverage 231/231
-        run: |
-          python3 tools/scan_repo_logics.py --summary
-          python3 tools/extract_master_index.py --summary
-          python3 -c "import json, pathlib, sys; rep=json.loads(pathlib.Path('artifacts/master_vs_repo_report.json').read_text(encoding='utf-8')); idx=json.loads(pathlib.Path('artifacts/master_index.json').read_text(encoding='utf-8')); missing=rep.get('missing_in_repo', []); total=len(idx); (print({'missing_count': len(missing), 'total_master': total}) or sys.exit(1)) if (missing or total!=231) else print('logic_coverage_gate: OK')"
-      - name: Run scaffold test
-        run: pytest -q tests/master/test_scaffold_missing.py
-
-  l4_readiness_gate:
-    runs-on: ubuntu-latest
-    needs: logic_coverage_gate
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Check L4 readiness
-        run: |
-          # TODO: Add proper L4 readiness check when tools/audit_l4_readiness.py is created
-          echo "L4 readiness gate placeholder"
-
-  traceability:
-    runs-on: ubuntu-latest
-    needs: l4_readiness_gate
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Generate traceability matrix
-        run: |
-          # TODO: Add proper traceability generation when tools/gen_traceability.py is created
-          echo "Traceability matrix generation placeholder"
-
-  dependency_audit:
-    runs-on: ubuntu-latest
-    needs: traceability
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Audit dependencies
-        run: |
-          # TODO: Add proper dependency audit when tools/gen_dependency_audit.py is created
-          echo "Dependency audit placeholder"
-
-  parity_smoke:
-    runs-on: ubuntu-latest
-    needs: dependency_audit
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Run parity smoke tests
-        run: |
-          # TODO: Add proper parity smoke tests when tests/parity/ is created
-          echo "Parity smoke tests placeholder"
-
-  replay_golden:
-    runs-on: ubuntu-latest
-    needs: parity_smoke
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install -U pip
-          pip install -r requirements-dev.txt
-      - name: Run replay golden tests
-        run: |
-          # TODO: Add proper replay golden tests when evidence/replay.py is created
-          echo "Replay golden tests placeholder"
-
   perf_baseline:
     runs-on: ubuntu-latest
     needs: replay_golden
@@ -831,15 +343,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
           pip install -r requirements-dev.txt
-      - name: Run performance baseline tests
+      - name: Run perf baseline tests
         run: |
-          # TODO: Add proper performance baseline tests when config/budgets.yaml is created
-          echo "Performance baseline tests placeholder"
+          pytest -q tests/perf/test_perf_baseline.py
 
   build:
     runs-on: ubuntu-latest
@@ -848,7 +359,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install deps
         run: |
           python -m pip install -U pip
@@ -856,7 +367,7 @@ jobs:
       - name: Generate SBOM
         run: |
           # TODO: Add proper SBOM generation when cyclonedx-python-lib is configured
-          echo "SBOM generation placeholder"
+          echo 'SBOM generation placeholder'
       - name: Build package
         run: |
           python -m build

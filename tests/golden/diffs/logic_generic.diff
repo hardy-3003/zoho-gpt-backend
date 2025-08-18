@@ -1,0 +1,14 @@
+--- expected.json
++++ actual.json
+@@ -32,5 +32,11 @@
+     "logic_id": "logic_099_example_generic",
+     "org_id": "60020606976",
+     "period": "2025-01"
++  },
++  "result": {
++    "count": 123,
++    "data": "Stubbed data for logic_099_example_generic",
++    "org_id": "60020606976",
++    "period": "2025-01"
+   }
+ }

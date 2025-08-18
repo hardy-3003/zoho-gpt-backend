@@ -1,0 +1,6 @@
+Replay mismatch detected.
+Case: logic_231_basic
+Observed SHA256: 861c487b5335f8a498242ec1a0a254b0d54f2d64718cb0027ea0c441f6a25c78
+Expected SHA256: 18e9bec9020e76911e2b30fea7498cdd857a902fef22a72876f6aed3fb3a44dc
+
+To update frozen hash intentionally, run: just replay-freeze CASE=logic_231_basic

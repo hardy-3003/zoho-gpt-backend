@@ -1,0 +1,78 @@
+{
+  "cache_hit": false,
+  "execution_time_ms": 0.0,
+  "logic_output": {
+    "alerts": [],
+    "applied_rule_set": {
+      "effective_date_window": null,
+      "packs": {}
+    },
+    "confidence": 0.95,
+    "explanation": "Contract-phase stubbed response for logic_231_ratio_impact_advisor",
+    "provenance": {
+      "computation": [
+        "evidence://compute/contract/stubbed"
+      ],
+      "source_data": [
+        "evidence://logic_231_ratio_impact_advisor/60020606976/2025-01/stubbed"
+      ],
+      "validation": [
+        "evidence://validate/logic_231_ratio_impact_advisor/contract"
+      ]
+    },
+    "result": {
+      "impact_report": {
+        "after": {
+          "current_ratio": 1.55,
+          "de_ratio": 0.92,
+          "dscr": 1.48,
+          "icr": 3.1
+        },
+        "before": {
+          "current_ratio": 1.8,
+          "de_ratio": 0.9,
+          "dscr": 1.65,
+          "icr": 3.4
+        },
+        "breaches": [],
+        "deltas": {
+          "current_ratio": -0.25,
+          "de_ratio": 0.02,
+          "dscr": -0.17,
+          "icr": -0.3
+        }
+      },
+      "suggestions": []
+    }
+  },
+  "metadata": {
+    "contract_version": "1.0",
+    "logic_id": "logic_231_ratio_impact_advisor",
+    "org_id": "60020606976",
+    "period": "2025-01"
+  },
+  "result": {
+    "impact_report": {
+      "after": {
+        "current_ratio": 1.55,
+        "de_ratio": 0.92,
+        "dscr": 1.48,
+        "icr": 3.1
+      },
+      "before": {
+        "current_ratio": 1.8,
+        "de_ratio": 0.9,
+        "dscr": 1.65,
+        "icr": 3.4
+      },
+      "breaches": [],
+      "deltas": {
+        "current_ratio": -0.25,
+        "de_ratio": 0.02,
+        "dscr": -0.17,
+        "icr": -0.3
+      }
+    },
+    "suggestions": []
+  }
+}

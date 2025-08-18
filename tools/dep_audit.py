@@ -8,7 +8,9 @@ from typing import List
 
 def main() -> int:
     root = pathlib.Path(__file__).resolve().parents[1]
-    bad = re.compile(r"^(?:from|import)\s+(subprocess|socket|requests|urllib\.request|os)\b", re.M)
+    bad = re.compile(
+        r"^(?:from|import)\s+(subprocess|socket|requests|urllib\.request|os)\b", re.M
+    )
     offenders: List[str] = []
     for p in [root / "logics", root / "app", root / "cli"]:
         if p.exists():
@@ -25,5 +27,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
