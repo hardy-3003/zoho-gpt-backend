@@ -24,6 +24,7 @@ except Exception:  # pragma: no cover
 _lock = Lock()
 _counters: Dict[Tuple[str, Tuple[Tuple[str, str], ...]], int] = {}
 _PERSIST_PATH = Path("data/metrics/counters.json")
+_USE_PERSISTENCE = str(os.getenv("ZOHO_METRICS_PERSIST", "")).lower() in {"1", "true", "yes"}
 
 
 def _normalize_labels(labels: Dict[str, str]) -> Tuple[Tuple[str, str], ...]:
@@ -62,6 +63,8 @@ def dump() -> Dict[str, Dict[str, int]]:
 
 
 def _persist_load() -> Dict[Tuple[str, Tuple[Tuple[str, str], ...]], int]:
+    if not _USE_PERSISTENCE:
+        return {}
     try:
         if not _PERSIST_PATH.exists():
             return {}
@@ -79,6 +82,8 @@ def _persist_load() -> Dict[Tuple[str, Tuple[Tuple[str, str], ...]], int]:
 
 
 def _persist_inc(name: str, labels: Dict[str, str]) -> None:
+    if not _USE_PERSISTENCE:
+        return
     try:
         _PERSIST_PATH.parent.mkdir(parents=True, exist_ok=True)
         label_str = (

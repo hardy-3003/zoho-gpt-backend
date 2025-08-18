@@ -8,8 +8,8 @@
     "path": [],
     "confidence": 0.8,
     "source": "heuristic",
-    "last_used": "2025-08-18T16:11:22.825642",
-    "usage_count": 19
+    "last_used": "2025-08-18T16:37:25.664528",
+    "usage_count": 20
   },
   "Expenses": {
     "field_name": "Expenses",
@@ -20,8 +20,8 @@
     "path": [],
     "confidence": 0.8,
     "source": "heuristic",
-    "last_used": "2025-08-18T16:11:22.826132",
-    "usage_count": 19
+    "last_used": "2025-08-18T16:37:25.664848",
+    "usage_count": 20
   },
   "Period": {
     "field_name": "Period",
@@ -30,8 +30,8 @@
     "path": [],
     "confidence": 0.7,
     "source": "heuristic",
-    "last_used": "2025-08-18T16:11:22.826523",
-    "usage_count": 19
+    "last_used": "2025-08-18T16:37:25.665227",
+    "usage_count": 20
   },
   "pnl_Revenue": {
     "field_name": "pnl_Revenue",
@@ -42,8 +42,8 @@
     "path": [],
     "confidence": 0.8,
     "source": "heuristic",
-    "last_used": "2025-08-18T16:11:22.826884",
-    "usage_count": 19
+    "last_used": "2025-08-18T16:37:25.665493",
+    "usage_count": 20
   },
   "pnl_Expenses": {
     "field_name": "pnl_Expenses",
@@ -54,7 +54,7 @@
     "path": [],
     "confidence": 0.8,
     "source": "heuristic",
-    "last_used": "2025-08-18T16:11:22.827202",
-    "usage_count": 19
+    "last_used": "2025-08-18T16:37:25.665801",
+    "usage_count": 20
   }
 }
