@@ -28,7 +28,10 @@ LOGIC_ID = "L-200"
 
 try:
     from helpers.zoho_client import get_json
-except Exception:
+except Exception as e:
+    import logging as _logging
+
+    _logging.getLogger(__name__).warning("zoho_client.get_json unavailable: %s", e)
 
     def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
         return {}
@@ -36,7 +39,12 @@ except Exception:
 
 try:
     from helpers.history_store import append_event
-except Exception:
+except Exception as e:
+    import logging as _logging
+
+    _logging.getLogger(__name__).warning(
+        "history_store.append_event unavailable: %s", e
+    )
 
     def append_event(*args, **kwargs) -> None:
         return None

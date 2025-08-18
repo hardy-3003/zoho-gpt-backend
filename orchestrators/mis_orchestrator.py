@@ -24,8 +24,8 @@ try:
     from helpers import telemetry as _telemetry
 
     _telemetry._log = logging.getLogger(__name__)
-except Exception:
-    pass
+except Exception as e:
+    logging.getLogger(__name__).warning("Failed to patch telemetry logger: %s", e)
 from helpers.alerts import evaluate_alerts, create_alert, AlertSeverity
 from helpers.anomaly_detector import detect_anomaly
 
@@ -81,8 +81,8 @@ def run_mis(
         import orchestrators.mis_orchestrator as _self
 
         _telemetry._log = getattr(_self, "_log", logger)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Failed to patch telemetry logger in run_mis: %s", e)
 
     # Set telemetry context before span so it persists after span ends
     set_org_context(input.org_id)
@@ -101,8 +101,8 @@ def run_mis(
         if not LOGIC_REGISTRY:
             try:
                 load_all_logics()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Failed to load logic registry: %s", e)
 
         if use_dag:
             return _run_mis_with_dag(

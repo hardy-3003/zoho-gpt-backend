@@ -28,7 +28,10 @@ LOGIC_ID = "L-189"
 
 try:
     from helpers.zoho_client import get_json
-except Exception:
+except Exception as e:
+    import logging as _logging
+
+    _logging.getLogger(__name__).warning("zoho_client.get_json unavailable: %s", e)
 
     def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
         return {}
@@ -36,7 +39,12 @@ except Exception:
 
 try:
     from helpers.history_store import append_event
-except Exception:
+except Exception as e:
+    import logging as _logging
+
+    _logging.getLogger(__name__).warning(
+        "history_store.append_event unavailable: %s", e
+    )
 
     def append_event(*args, **kwargs) -> None:
         return None
@@ -73,8 +81,10 @@ def _learn_from_history(
                 "signals": ["l4-v0-run", "schema:stable"],
             },
         )
-    except Exception:
-        pass
+    except Exception as e:
+        import logging as _logging
+
+        _logging.getLogger(__name__).warning("append_event failed: %s", e)
     return {"notes": []}
 
 
@@ -132,9 +142,10 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
     ):
         try:
             validate_output_contract(core_out)
-        except Exception:
-            # If legacy contract is off, fall back to wrapper path below.
-            pass
+        except Exception as e:
+            import logging as _logging
+
+            _logging.getLogger(__name__).warning("contract validation failed: %s", e)
         else:
             return core_out
 
@@ -145,8 +156,11 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
     validations_failed = 0
     try:
         validate_accounting(result)
-    except Exception:
+    except Exception as e:
         validations_failed += 1
+        import logging as _logging
+
+        _logging.getLogger(__name__).warning("accounting validation failed: %s", e)
 
     # Minimal provenance (period-aware)
     prov = make_provenance(
@@ -171,8 +185,11 @@ def handle_l4(payload: Dict[str, Any]) -> Dict[str, Any]:
     sample_size = 1
     try:
         sample_size = max(1, len(result))  # if dict, len = #keys
-    except Exception:
+    except Exception as e:
         sample_size = 1
+        import logging as _logging
+
+        _logging.getLogger(__name__).warning("sample_size compute failed: %s", e)
 
     confidence = score_confidence(
         sample_size=sample_size,

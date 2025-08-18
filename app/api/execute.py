@@ -42,8 +42,8 @@ async def execute_logic(payload: Dict[str, Any]) -> Dict[str, Any]:
     # Observability entry
     try:
         obs_metrics.inc("requests_total", {"surface": "rest"})
-    except Exception:
-        pass
+    except Exception as e:
+        obs_log.warn("metrics_inc_failed", attrs={"surface": "rest", "error": str(e)})
 
     try:
         # Support two shapes:
@@ -75,8 +75,15 @@ async def execute_logic(payload: Dict[str, Any]) -> Dict[str, Any]:
 
         try:
             obs_metrics.inc("exec_calls_total", {"logic": logic_id})
-        except Exception:
-            pass
+        except Exception as e:
+            obs_log.warn(
+                "metrics_inc_failed",
+                attrs={
+                    "metric": "exec_calls_total",
+                    "logic": logic_id,
+                    "error": str(e),
+                },
+            )
 
         logic_output = _generate_stubbed_output(logic_id, org_id, period)
 
@@ -126,8 +133,8 @@ async def execute_logic(payload: Dict[str, Any]) -> Dict[str, Any]:
                     context.get("trace_id") if isinstance(context, dict) else None
                 ),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            obs_log.warn("execute_ok_log_failed", attrs={"error": str(e)})
         return response
 
     except HTTPException as e:
@@ -141,8 +148,8 @@ async def execute_logic(payload: Dict[str, Any]) -> Dict[str, Any]:
                     context.get("trace_id") if isinstance(context, dict) else None
                 ),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            obs_log.warn("execute_http_error_log_failed", attrs={"error": str(e)})
         raise
     except Exception as e:
         try:
@@ -154,8 +161,8 @@ async def execute_logic(payload: Dict[str, Any]) -> Dict[str, Any]:
                     context.get("trace_id") if isinstance(context, dict) else None
                 ),
             )
-        except Exception:
-            pass
+        except Exception as e:
+            obs_log.warn("execute_error_log_failed", attrs={"error": str(e)})
         raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}")
 
 

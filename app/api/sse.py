@@ -48,8 +48,8 @@ async def sse_stream(
     try:
         obs_metrics.inc("requests_total", {"surface": "sse"})
         obs_log.info("sse_start", attrs={"has_cursor": bool(cursor)})
-    except Exception:
-        pass
+    except Exception as e:
+        obs_log.warn("sse_start_log_failed", attrs={"error": str(e)})
 
     async def event_generator():
         """Generate SSE events with deterministic timing"""
@@ -93,8 +93,8 @@ async def sse_stream(
         yield f"event: {done_event.event_type}\ndata: {json.dumps(done_event.data)}\n\n"
         try:
             obs_log.info("sse_done", attrs={"events": 7})
-        except Exception:
-            pass
+        except Exception as e:
+            obs_log.warn("sse_done_log_failed", attrs={"error": str(e)})
 
     return StreamingResponse(
         event_generator(),
