@@ -1,0 +1,466 @@
+{
+  "contracts": {
+    "Alert": {
+      "field_types": {
+        "code": "<class 'str'>",
+        "evidence": "typing.List[str]",
+        "message": "<class 'str'>",
+        "metadata": "typing.Dict[str, typing.Any]",
+        "severity": "<enum 'AlertSeverity'>"
+      },
+      "fields": [
+        "code",
+        "severity",
+        "message",
+        "evidence",
+        "metadata"
+      ],
+      "hash": "09149a2988aec638e0e58bd04bde953a9db5767193225a9e2550e439b9a260bc",
+      "module": "surfaces.contracts"
+    },
+    "AppliedRuleSet": {
+      "field_types": {
+        "effective_date_window": "typing.Optional[typing.Dict[str, str]]",
+        "packs": "typing.Dict[str, str]"
+      },
+      "fields": [
+        "packs",
+        "effective_date_window"
+      ],
+      "hash": "1fdb63e1d3fc9fa0e9a3684fcd5ae2cc6dfe001c279089997d05879581726ce5",
+      "module": "surfaces.contracts"
+    },
+    "CLICommand": {
+      "field_types": {
+        "arguments": "typing.List[str]",
+        "command": "<class 'str'>",
+        "options": "typing.Dict[str, typing.Any]",
+        "subcommand": "typing.Optional[str]"
+      },
+      "fields": [
+        "command",
+        "subcommand",
+        "arguments",
+        "options"
+      ],
+      "hash": "3d6abcf4c01caf31f14c8516f406f8e583b1d0b54109e4b77807835947c0d7c9",
+      "module": "surfaces.contracts"
+    },
+    "CLIResponse": {
+      "field_types": {
+        "error": "typing.Optional[str]",
+        "exit_code": "<class 'int'>",
+        "metadata": "typing.Dict[str, typing.Any]",
+        "output": "<class 'str'>",
+        "success": "<class 'bool'>"
+      },
+      "fields": [
+        "success",
+        "output",
+        "error",
+        "exit_code",
+        "metadata"
+      ],
+      "hash": "9b1c2df451fd605532d2c7269aae4346e85f12de4ff5a6ab59fcbcd51c35ef6c",
+      "module": "surfaces.contracts"
+    },
+    "ConsentObject": {
+      "field_types": {
+        "expires_at": "<class 'datetime.datetime'>",
+        "lawful_basis": "typing.Optional[str]",
+        "purpose": "<class 'str'>",
+        "retention_days": "<class 'int'>",
+        "scope": "typing.List[str]",
+        "subject": "<class 'str'>"
+      },
+      "fields": [
+        "subject",
+        "purpose",
+        "expires_at",
+        "retention_days",
+        "scope",
+        "lawful_basis"
+      ],
+      "hash": "b813227de4114b99bb7258794e6e52b753e55ff3c7026e17bdacca4c3e5f2fd7",
+      "module": "surfaces.contracts"
+    },
+    "EvidenceNode": {
+      "field_types": {
+        "created_at": "<class 'datetime.datetime'>",
+        "hash": "<class 'str'>",
+        "id": "<class 'str'>",
+        "meta": "typing.Dict[str, typing.Any]",
+        "source": "<class 'str'>"
+      },
+      "fields": [
+        "id",
+        "hash",
+        "source",
+        "meta",
+        "created_at"
+      ],
+      "hash": "6aadab416fdc906df1d0911eccc5abca2a986d15cc4dcc93440841e1ff06d050",
+      "module": "surfaces.contracts"
+    },
+    "ExecuteRequest": {
+      "field_types": {
+        "context": "typing.Dict[str, typing.Any]",
+        "inputs": "typing.Dict[str, typing.Any]",
+        "logic_id": "<class 'str'>",
+        "org_id": "<class 'str'>",
+        "period": "<class 'str'>"
+      },
+      "fields": [
+        "logic_id",
+        "org_id",
+        "period",
+        "inputs",
+        "context"
+      ],
+      "hash": "2e0300f92c4cfdba8ec8bc1ede1ea348df58182ece77e7c484fe92cab69f7435",
+      "module": "surfaces.contracts"
+    },
+    "ExecuteResponse": {
+      "field_types": {
+        "cache_hit": "<class 'bool'>",
+        "execution_time_ms": "<class 'float'>",
+        "logic_output": "<class 'surfaces.contracts.LogicOutput'>",
+        "metadata": "typing.Dict[str, typing.Any]"
+      },
+      "fields": [
+        "logic_output",
+        "execution_time_ms",
+        "cache_hit",
+        "metadata"
+      ],
+      "hash": "23f740c25f46a14be27fb74adb262aa21bb55e1006077976a3d6668ef82f8d15",
+      "module": "surfaces.contracts"
+    },
+    "JournalEntry": {
+      "field_types": {
+        "date": "<class 'str'>",
+        "lines": "typing.List[surfaces.contracts.JournalEntryLine]",
+        "notes": "<class 'str'>",
+        "source": "<class 'str'>"
+      },
+      "fields": [
+        "date",
+        "lines",
+        "notes",
+        "source"
+      ],
+      "hash": "ff936b22d8c4abe6f9c2f92a33f2257315f104e6a0aa914084c214779c7ccc80",
+      "module": "surfaces.contracts"
+    },
+    "JournalEntryLine": {
+      "field_types": {
+        "account": "<class 'str'>",
+        "cr": "<class 'float'>",
+        "dr": "<class 'float'>",
+        "meta": "typing.Dict[str, typing.Any]"
+      },
+      "fields": [
+        "account",
+        "dr",
+        "cr",
+        "meta"
+      ],
+      "hash": "440f9c284d4f995456707753b1d04d844f0f788b95af6cee6421a88772bcbc62",
+      "module": "surfaces.contracts"
+    },
+    "LogicMetadata": {
+      "field_types": {
+        "assumptions": "typing.List[str]",
+        "category": "<enum 'LogicCategory'>",
+        "evidence_sources": "typing.List[str]",
+        "evolution_notes": "typing.List[str]",
+        "logic_id": "<class 'str'>",
+        "outputs": "typing.Dict[str, typing.Any]",
+        "required_inputs": "typing.Dict[str, typing.Any]",
+        "tags": "typing.List[str]",
+        "title": "<class 'str'>"
+      },
+      "fields": [
+        "title",
+        "logic_id",
+        "tags",
+        "category",
+        "required_inputs",
+        "outputs",
+        "assumptions",
+        "evidence_sources",
+        "evolution_notes"
+      ],
+      "hash": "d3cc81bbb7515714bbd5276c2270a3ba697bfa0c3f77a6ccc911aa49cc7abe5b",
+      "module": "surfaces.contracts"
+    },
+    "LogicOutput": {
+      "field_types": {
+        "alerts": "typing.List[surfaces.contracts.Alert]",
+        "applied_rule_set": "<class 'surfaces.contracts.AppliedRuleSet'>",
+        "confidence": "<class 'float'>",
+        "explanation": "typing.Optional[str]",
+        "provenance": "typing.Dict[str, typing.List[str]]",
+        "result": "typing.Union[typing.Dict[str, typing.Any], typing.List[typing.Any], typing.Any]"
+      },
+      "fields": [
+        "result",
+        "provenance",
+        "confidence",
+        "alerts",
+        "applied_rule_set",
+        "explanation"
+      ],
+      "hash": "be5bf059d9bc14a9c8a3e7af09d97c88fc7f3d3937011f52ca5181ab890b5233",
+      "module": "surfaces.contracts"
+    },
+    "MCPFetchRequest": {
+      "field_types": {
+        "context": "typing.Dict[str, typing.Any]",
+        "plan": "<class 'surfaces.contracts.OrchestratorPlan'>",
+        "stream": "<class 'bool'>"
+      },
+      "fields": [
+        "plan",
+        "stream",
+        "context"
+      ],
+      "hash": "f66f39ca89c09309a8112017478d0684b48a912d9f28acaf0da6e11293476052",
+      "module": "surfaces.contracts"
+    },
+    "MCPFetchResponse": {
+      "field_types": {
+        "result": "<class 'surfaces.contracts.OrchestratorOutput'>",
+        "stream_events": "typing.Optional[typing.List[typing.Dict[str, typing.Any]]]"
+      },
+      "fields": [
+        "result",
+        "stream_events"
+      ],
+      "hash": "4463b70b2e2568be06f97e1fd7f185d0ddac59abd8eeb26ee205ed5a61ab7b6a",
+      "module": "surfaces.contracts"
+    },
+    "MCPSearchRequest": {
+      "field_types": {
+        "context": "typing.Dict[str, typing.Any]",
+        "org_id": "<class 'str'>",
+        "period": "<class 'str'>",
+        "query": "<class 'str'>"
+      },
+      "fields": [
+        "query",
+        "org_id",
+        "period",
+        "context"
+      ],
+      "hash": "b5a18fa735f1f02afe5ce4cd6ef4ae819664a8ceb4038d21915a8315a310f3f2",
+      "module": "surfaces.contracts"
+    },
+    "MCPSearchResponse": {
+      "field_types": {
+        "confidence": "<class 'float'>",
+        "explanation": "typing.Optional[str]",
+        "plan": "<class 'surfaces.contracts.OrchestratorPlan'>"
+      },
+      "fields": [
+        "plan",
+        "confidence",
+        "explanation"
+      ],
+      "hash": "8eb1e505eb17e6a9105cc40179f6bcfda30a7d68eb0f9d268811deba6fb72f25",
+      "module": "surfaces.contracts"
+    },
+    "OrchestratorOutput": {
+      "field_types": {
+        "alerts": "typing.List[surfaces.contracts.Alert]",
+        "applied_rule_set": "<class 'surfaces.contracts.AppliedRuleSet'>",
+        "completeness": "<class 'float'>",
+        "execution_time_ms": "<class 'float'>",
+        "metadata": "typing.Dict[str, typing.Any]",
+        "sections": "typing.Dict[str, surfaces.contracts.LogicOutput]"
+      },
+      "fields": [
+        "sections",
+        "alerts",
+        "completeness",
+        "applied_rule_set",
+        "execution_time_ms",
+        "metadata"
+      ],
+      "hash": "2e2f48870a9d917ad82de608d839f6c0efd633e0b5ce35452559bee2cf13eaeb",
+      "module": "surfaces.contracts"
+    },
+    "OrchestratorPlan": {
+      "field_types": {
+        "created_at": "<class 'datetime.datetime'>",
+        "items": "typing.List[surfaces.contracts.OrchestratorPlanItem]",
+        "metadata": "typing.Dict[str, typing.Any]",
+        "plan_id": "<class 'str'>"
+      },
+      "fields": [
+        "plan_id",
+        "items",
+        "metadata",
+        "created_at"
+      ],
+      "hash": "70a42b40a929d1ea4a6b196ff45dfbab7a064744d9e1e30b50c8ec05870af1f2",
+      "module": "surfaces.contracts"
+    },
+    "OrchestratorPlanItem": {
+      "field_types": {
+        "dependencies": "typing.List[str]",
+        "inputs": "typing.Dict[str, typing.Any]",
+        "logic_id": "<class 'str'>",
+        "retry_config": "typing.Optional[typing.Dict[str, typing.Any]]",
+        "timeout_seconds": "typing.Optional[int]"
+      },
+      "fields": [
+        "logic_id",
+        "inputs",
+        "dependencies",
+        "timeout_seconds",
+        "retry_config"
+      ],
+      "hash": "8351ebce556cc98a2d1a87b9db489ce9a926518285a835fbdf6233a82a54a732",
+      "module": "surfaces.contracts"
+    },
+    "RatioBreach": {
+      "field_types": {
+        "after": "<class 'float'>",
+        "facility": "typing.Optional[str]",
+        "ratio": "<class 'str'>",
+        "threshold": "<class 'float'>"
+      },
+      "fields": [
+        "ratio",
+        "threshold",
+        "after",
+        "facility"
+      ],
+      "hash": "b97f8f7ee60f82a956c195222575725d6c0a70b2f58817b1ca774c8b57e2a07d",
+      "module": "surfaces.contracts"
+    },
+    "RatioImpactOutput": {
+      "field_types": {
+        "impact_report": "<class 'surfaces.contracts.RatioImpactReport'>",
+        "suggestions": "typing.List[surfaces.contracts.RatioSuggestion]"
+      },
+      "fields": [
+        "impact_report",
+        "suggestions"
+      ],
+      "hash": "39d41d16fd133231e296f72328fbb5c24e7f50c5ce468b85821c0bce88b5fa40",
+      "module": "surfaces.contracts"
+    },
+    "RatioImpactReport": {
+      "field_types": {
+        "after": "typing.Dict[str, float]",
+        "before": "typing.Dict[str, float]",
+        "breaches": "typing.List[surfaces.contracts.RatioBreach]",
+        "deltas": "typing.Dict[str, float]"
+      },
+      "fields": [
+        "before",
+        "after",
+        "deltas",
+        "breaches"
+      ],
+      "hash": "6954697430d6cc7b0cf4858f4167b4330fc8990056889482777cafc70d809509",
+      "module": "surfaces.contracts"
+    },
+    "RatioImpactRequest": {
+      "field_types": {
+        "facility_ids": "typing.List[str]",
+        "org_id": "<class 'str'>",
+        "period": "<class 'str'>",
+        "proposed_entry": "<class 'surfaces.contracts.JournalEntry'>"
+      },
+      "fields": [
+        "org_id",
+        "period",
+        "proposed_entry",
+        "facility_ids"
+      ],
+      "hash": "6787e6b48600922adc755bff3c90aef7e9db3b80fdcc5305e917562c0bbac883",
+      "module": "surfaces.contracts"
+    },
+    "RatioSuggestion": {
+      "field_types": {
+        "compliance_refs": "typing.List[str]",
+        "posting_patch": "typing.Dict[str, typing.Any]",
+        "projected_after": "typing.Dict[str, float]",
+        "rationale": "<class 'str'>",
+        "title": "<class 'str'>"
+      },
+      "fields": [
+        "title",
+        "rationale",
+        "compliance_refs",
+        "projected_after",
+        "posting_patch"
+      ],
+      "hash": "6c9bfa8ba4e7b3be4194ee198732a0fbd7f0f3cadb700c79cad9ac614e57ab44",
+      "module": "surfaces.contracts"
+    },
+    "RulePack": {
+      "field_types": {
+        "effective_from": "<class 'str'>",
+        "effective_to": "typing.Optional[str]",
+        "fixtures": "typing.Dict[str, str]",
+        "pack_id": "<class 'str'>",
+        "rules": "typing.List[typing.Dict[str, typing.Any]]",
+        "tests": "typing.List[typing.Dict[str, typing.Any]]"
+      },
+      "fields": [
+        "pack_id",
+        "effective_from",
+        "effective_to",
+        "rules",
+        "fixtures",
+        "tests"
+      ],
+      "hash": "b39573ba5a8f2fe574d1680e78d1eaff7677f0569019b899e000634b79674313",
+      "module": "surfaces.contracts"
+    },
+    "SSEEvent": {
+      "field_types": {
+        "data": "typing.Dict[str, typing.Any]",
+        "event_id": "typing.Optional[str]",
+        "event_type": "<class 'str'>",
+        "retry": "typing.Optional[int]"
+      },
+      "fields": [
+        "event_type",
+        "data",
+        "event_id",
+        "retry"
+      ],
+      "hash": "41727a884f309b25ddb4479a4d14d599dccfb5ccfd014b0b4fd99dd720d5dc71",
+      "module": "surfaces.contracts"
+    },
+    "WebhookPayload": {
+      "field_types": {
+        "event_type": "<class 'str'>",
+        "org_id": "<class 'str'>",
+        "payload": "typing.Dict[str, typing.Any]",
+        "signature": "typing.Optional[str]",
+        "timestamp": "<class 'datetime.datetime'>"
+      },
+      "fields": [
+        "event_type",
+        "org_id",
+        "timestamp",
+        "payload",
+        "signature"
+      ],
+      "hash": "19d8312fb0aef19dfa70a957219948e80684838394cb5f7851f352b2b5b50541",
+      "module": "surfaces.contracts"
+    }
+  },
+  "metadata": {
+    "generated_at": "2025-08-18T09:37:25.353855",
+    "generator": "tools/gen_contract_snapshots.py",
+    "total_contracts": 27,
+    "version": "1.0"
+  }
+}
