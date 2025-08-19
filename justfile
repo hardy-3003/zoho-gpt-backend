@@ -242,12 +242,7 @@ coverage-audit:
     python3 tools/scan_repo_logics.py --summary
     @echo ""
     @echo "Counts:"
-    python3 - <<'PY'
-import json, pathlib
-p = pathlib.Path('artifacts/master_vs_repo_report.json')
-obj = json.loads(p.read_text(encoding='utf-8'))
-print(json.dumps({k: len(obj.get(k, [])) for k in ['missing_in_repo','extra_in_repo','slug_mismatches','path_mismatches','duplicate_ids']}, sort_keys=True))
-PY
+    python3 tools/coverage_audit.py
 
 # Coverage check: run scaffold test
 coverage-check:

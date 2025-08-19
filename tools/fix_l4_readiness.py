@@ -17,8 +17,8 @@ def read_l4_report() -> Dict[str, Any]:
     report_path = Path("artifacts/l4_readiness_report.json")
     if not report_path.exists():
         raise FileNotFoundError("L4 readiness report not found")
-    
-    with open(report_path, 'r', encoding='utf-8') as f:
+
+    with open(report_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -33,41 +33,43 @@ def convert_to_l4_structure(file_path: str) -> bool:
     if not path.exists():
         print(f"Warning: File {file_path} does not exist")
         return False
-    
+
     # Read the current content
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         content = f.read()
-    
+
     # Check if already L4-ready
     if "from logics.l4_contract_runtime import" in content:
         print(f"File {file_path} is already L4-ready")
         return True
-    
+
     # Extract logic ID from filename
-    match = re.search(r'logic_(\d{3})_', path.name)
+    match = re.search(r"logic_(\d{3})_", path.name)
     if not match:
         print(f"Warning: Could not extract logic ID from {file_path}")
         return False
-    
+
     logic_id = match.group(1)
     logic_id_formatted = f"L-{logic_id}"
-    
+
     # Extract the docstring and function
     docstring_match = re.search(r'"""(.*?)"""', content, re.DOTALL)
     if not docstring_match:
         print(f"Warning: No docstring found in {file_path}")
         return False
-    
+
     docstring = docstring_match.group(1).strip()
-    
+
     # Find the handle function
-    handle_match = re.search(r'def handle\([^)]*\)[^:]*:(.*?)(?=\n\S|$)', content, re.DOTALL)
+    handle_match = re.search(
+        r"def handle\([^)]*\)[^:]*:(.*?)(?=\n\S|$)", content, re.DOTALL
+    )
     if not handle_match:
         print(f"Warning: No handle function found in {file_path}")
         return False
-    
+
     handle_body = handle_match.group(1).strip()
-    
+
     # Create new L4 structure
     new_content = f'''from logics.l4_contract_runtime import (
     make_provenance,
@@ -147,11 +149,11 @@ def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Handle {logic_id_formatted} logic (legacy interface)."""
     return execute(payload)
 '''
-    
+
     # Write the new content
-    with open(path, 'w', encoding='utf-8') as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(new_content)
-    
+
     print(f"Converted {file_path} to L4 structure")
     return True
 
@@ -161,16 +163,16 @@ def main():
     try:
         # Read the L4 report
         report = read_l4_report()
-        
+
         # Get non-ready files
         non_ready_files = get_non_ready_files(report)
-        
+
         if not non_ready_files:
             print("No files need conversion - all files are L4-ready!")
             return
-        
+
         print(f"Found {len(non_ready_files)} files that need L4 conversion")
-        
+
         # Convert each file
         converted_count = 0
         for file_info in non_ready_files:
@@ -178,25 +180,29 @@ def main():
             if file_path and not file_path.startswith("missing"):
                 if convert_to_l4_structure(file_path):
                     converted_count += 1
-        
+
         print(f"Successfully converted {converted_count} files to L4 structure")
-        
+
         # Run the audit again to check results
         print("\nRunning L4 readiness audit...")
         import subprocess
-        result = subprocess.run(["python3", "tools/audit_l4_readiness.py"], 
-                              capture_output=True, text=True)
-        
+
+        result = subprocess.run(
+            ["python3", "tools/audit_l4_readiness.py"], capture_output=True, text=True
+        )
+
         if result.returncode == 0:
             print("✅ All files are now L4-ready!")
         else:
-            print(f"⚠️  Some files still need attention (exit code: {result.returncode})")
+            print(
+                f"⚠️  Some files still need attention (exit code: {result.returncode})"
+            )
             print("Check artifacts/l4_readiness_report.json for details")
-        
+
     except Exception as e:
         print(f"Error: {e}")
         return 1
-    
+
     return 0
 
 
