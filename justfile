@@ -338,3 +338,12 @@ build-package:
 	@python3 -m pip install -U pip >/dev/null
 	@pip3 install -r requirements-dev.txt >/dev/null
 	@python3 -m build
+
+# Verify built artifacts' metadata (sdist/wheel) using Twine
+check-dist:
+	@python3 -m pip install -U pip >/dev/null
+	@pip3 install -r requirements-dev.txt >/dev/null
+	@pip3 install -U twine >/dev/null
+	@python3 -m build
+	@python3 -m twine check dist/*
+

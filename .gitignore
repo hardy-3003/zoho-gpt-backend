@@ -20,3 +20,8 @@ deep_spec_audit.json
 deep_spec_summary.md
 l4_wave1_and_scaffold.txt
 wave2_L4_5logics.txt
+
+# build artifacts
+dist/
+build/
+*.egg-info/
