@@ -1,59 +1,25 @@
 #!/usr/bin/env python3
 """
-CLI Entrypoint for Zoho GPT Backend
-
-Task P1.2.5 — /cli runner (contract-only)
-Provides a Python CLI entrypoint `zgpt` with execute command for contract testing.
+Contract-only CLI (pure stdlib) to satisfy dependency audit.
+No imports of web stacks or third-party libraries. Deterministic output.
 """
 
-import os
+from __future__ import annotations
+
 import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
-
-# Add project root to path for imports
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from surfaces.contracts import (
-    ExecuteRequest,
-    ExecuteResponse,
-    LogicOutput,
-    Alert,
-    AlertSeverity,
-    AppliedRuleSet,
-)
-
-os.environ.setdefault("ZOHO_METRICS_PERSIST", "1")
-from obs import metrics as obs_metrics
-from obs import log as obs_log
+from typing import Any, Dict, List, Optional
 
 
-def load_execute_request_from_json(plan_path: str) -> ExecuteRequest:
-    """Load ExecuteRequest from JSON file"""
+DEF_PERIOD = "2025-01"
+
+
+def _load_plan_dict(plan_path: str) -> Dict[str, Any]:
     try:
-        with open(plan_path, "r") as f:
-            data = json.load(f)
-        # Support two shapes:
-        # 1) Canonical ExecuteRequest
-        # 2) Parity shape: {"plan": [{"logic": "logic_001_*", "inputs": {"period": "YYYY-MM"}}], ...}
-        if isinstance(data, dict) and "plan" in data and isinstance(data["plan"], list):
-            first = data["plan"][0] if data["plan"] else {}
-            logic_id = first.get("logic", "logic_001_profit_and_loss_summary")
-            inputs = first.get("inputs", {}) if isinstance(first, dict) else {}
-            org_id = data.get("org_id", "60020606976")
-            period = inputs.get("period") or data.get("period", "2025-01")
-            context = data.get("context", {})
-            return ExecuteRequest(
-                logic_id=logic_id,
-                org_id=org_id,
-                period=period,
-                inputs=inputs if isinstance(inputs, dict) else {},
-                context=context if isinstance(context, dict) else {},
-            )
-        return ExecuteRequest(**data)
+        with open(plan_path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
     except FileNotFoundError:
         print(f"Error: Plan file '{plan_path}' not found", file=sys.stderr)
         sys.exit(1)
@@ -65,33 +31,63 @@ def load_execute_request_from_json(plan_path: str) -> ExecuteRequest:
         sys.exit(1)
 
 
-def build_execute_request_from_flags(
-    logic_id: str,
-    org_id: Optional[str] = None,
-    period: Optional[str] = None,
-    inputs: Optional[Dict[str, Any]] = None,
-    context: Optional[Dict[str, Any]] = None,
-) -> ExecuteRequest:
-    """Build ExecuteRequest from command line flags"""
-    if not org_id:
-        org_id = "60020606976"  # Default test org ID
-    if not period:
-        period = "2025-01"  # Default test period
+def _build_request_from_flags(ns: argparse.Namespace) -> Dict[str, Any]:
+    if not ns.logic_id:
+        print("Error: --logic-id is required when not using --plan", file=sys.stderr)
+        sys.exit(1)
+    req: Dict[str, Any] = {
+        "logic_id": ns.logic_id,
+        "org_id": ns.org_id or "60020606976",
+        "period": ns.period or DEF_PERIOD,
+        "inputs": {},
+        "context": {},
+    }
+    if ns.inputs:
+        try:
+            req["inputs"] = json.loads(ns.inputs)
+        except json.JSONDecodeError:
+            print("Error: --inputs must be valid JSON", file=sys.stderr)
+            sys.exit(1)
+    if ns.context:
+        try:
+            req["context"] = json.loads(ns.context)
+        except json.JSONDecodeError:
+            print("Error: --context must be valid JSON", file=sys.stderr)
+            sys.exit(1)
+    return req
 
-    return ExecuteRequest(
-        logic_id=logic_id,
-        org_id=org_id,
-        period=period,
-        inputs=inputs or {},
-        context=context or {},
-    )
+
+def _parse_request_from_plan(data: Dict[str, Any]) -> Dict[str, Any]:
+    # Support canonical request or plan-array shape
+    if isinstance(data, dict) and isinstance(data.get("plan"), list):
+        first = data["plan"][0] if data["plan"] else {}
+        logic_id = first.get("logic", "logic_001_profit_and_loss_summary")
+        inputs = first.get("inputs", {}) if isinstance(first, dict) else {}
+        org_id = data.get("org_id", "60020606976")
+        period = inputs.get("period") or data.get("period", DEF_PERIOD)
+        context = data.get("context", {})
+        return {
+            "logic_id": logic_id,
+            "org_id": org_id,
+            "period": period,
+            "inputs": inputs if isinstance(inputs, dict) else {},
+            "context": context if isinstance(context, dict) else {},
+            "_had_plan": True,
+        }
+    # Canonical
+    return {
+        "logic_id": data.get("logic_id", "logic_001_profit_and_loss_summary"),
+        "org_id": data.get("org_id", "60020606976"),
+        "period": data.get("period", DEF_PERIOD),
+        "inputs": data.get("inputs", {}) or {},
+        "context": data.get("context", {}) or {},
+        "_had_plan": False,
+    }
 
 
-def create_stubbed_response(request: ExecuteRequest) -> ExecuteResponse:
-    """Create a stubbed ExecuteResponse for contract testing"""
-    # Deterministic stubbed result aligned with REST contract stub
-    if str(request.logic_id).startswith("logic_001"):
-        result = {
+def _generate_stubbed_result(logic_id: str, org_id: str, period: str) -> Dict[str, Any]:
+    if str(logic_id).startswith("logic_001"):
+        result: Dict[str, Any] = {
             "totals": {
                 "revenue": 1000000,
                 "cogs": 600000,
@@ -99,12 +95,9 @@ def create_stubbed_response(request: ExecuteRequest) -> ExecuteResponse:
                 "opex": 200000,
                 "ebit": 200000,
             },
-            "sections": {
-                "sales": {"amount": 1000000},
-                "expenses": {"amount": 800000},
-            },
+            "sections": {"sales": {"amount": 1000000}, "expenses": {"amount": 800000}},
         }
-    elif str(request.logic_id).startswith("logic_231"):
+    elif str(logic_id).startswith("logic_231"):
         result = {
             "impact_report": {
                 "before": {
@@ -131,231 +124,91 @@ def create_stubbed_response(request: ExecuteRequest) -> ExecuteResponse:
         }
     else:
         result = {
-            "data": f"Stubbed data for {request.logic_id}",
+            "data": f"Stubbed data for {logic_id}",
             "count": 123,
-            "period": request.period,
-            "org_id": request.org_id,
+            "period": period,
+            "org_id": org_id,
         }
 
     # Reflect basic request fields in result for CLI contract tests
-    if isinstance(result, dict):
-        result.setdefault("logic_id", request.logic_id)
-        result.setdefault("org_id", request.org_id)
-        result.setdefault("period", request.period)
+    result.setdefault("logic_id", logic_id)
+    result.setdefault("org_id", org_id)
+    result.setdefault("period", period)
+    return result
 
-    logic_output = LogicOutput(
-        result=result,
-        provenance={
-            "source_data": [
-                f"evidence://{request.logic_id}/{request.org_id}/{request.period}/cli_stub"
-            ],
+
+def _make_response(req: Dict[str, Any]) -> Dict[str, Any]:
+    logic_id = str(req.get("logic_id", "logic_001_profit_and_loss_summary"))
+    org_id = str(req.get("org_id", "60020606976"))
+    period = str(req.get("period", DEF_PERIOD))
+
+    result = _generate_stubbed_result(logic_id, org_id, period)
+    logic_output: Dict[str, Any] = {
+        "result": result,
+        "provenance": {
+            "source_data": [f"evidence://{logic_id}/{org_id}/{period}/cli_stub"],
             "computation": ["evidence://compute/cli/contract/stubbed"],
-            "validation": [f"evidence://validate/{request.logic_id}/contract"],
+            "validation": [f"evidence://validate/{logic_id}/contract"],
         },
-        confidence=0.95,
-        alerts=[],
-        applied_rule_set=AppliedRuleSet(),
-        explanation=f"CLI contract-phase stubbed response for {request.logic_id}",
-    )
+        "confidence": 0.95,
+        "alerts": [],
+        "applied_rule_set": {"packs": {}, "effective_date_window": None},
+        "explanation": f"CLI contract-phase stubbed response for {logic_id}",
+    }
 
-    return ExecuteResponse(
-        logic_output=logic_output,
-        execution_time_ms=0.1,  # Deterministic stub time
-        cache_hit=False,
-        metadata={
-            "source": "cli",
-            "contract_test": True,
-            "deterministic": True,
-            "logic_id": request.logic_id,
-            "org_id": request.org_id,
-            "period": request.period,
+    resp: Dict[str, Any] = {
+        "logic_output": logic_output,
+        "execution_time_ms": 0.0,
+        "cache_hit": False,
+        "metadata": {
+            "logic_id": logic_id,
+            "org_id": org_id,
+            "period": period,
             "contract_version": "1.0",
         },
-    )
+    }
+    if req.get("_had_plan"):
+        resp["result"] = result
+    return resp
 
 
-def execute_command(args: argparse.Namespace) -> None:
-    """Handle the execute command"""
-    try:
-        # Configure CLI log sink to stderr to avoid polluting stdout JSON
-        def _cli_sink(payload: Dict[str, Any]) -> None:
-            print(
-                json.dumps(payload, separators=(",", ":")), file=sys.stderr, flush=True
-            )
-
-        obs_log.set_sink(_cli_sink)
-
-        # Load or build ExecuteRequest
-        if args.plan:
-            request = load_execute_request_from_json(args.plan)
-        else:
-            if not args.logic_id:
-                print(
-                    "Error: --logic-id is required when not using --plan",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
-
-            # Parse inputs and context if provided
-            inputs = {}
-            if args.inputs:
-                try:
-                    inputs = json.loads(args.inputs)
-                except json.JSONDecodeError:
-                    print("Error: --inputs must be valid JSON", file=sys.stderr)
-                    sys.exit(1)
-
-            context = {}
-            if args.context:
-                try:
-                    context = json.loads(args.context)
-                except json.JSONDecodeError:
-                    print("Error: --context must be valid JSON", file=sys.stderr)
-                    sys.exit(1)
-
-            request = build_execute_request_from_flags(
-                logic_id=args.logic_id,
-                org_id=args.org_id,
-                period=args.period,
-                inputs=inputs,
-                context=context,
-            )
-
-        # Create stubbed response
-        response = create_stubbed_response(request)
-
-        # Output as JSON matching REST contract stub, plus top-level result mirror for parity tests
-        response_dict = {
-            "logic_output": {
-                "result": response.logic_output.result,
-                "provenance": response.logic_output.provenance,
-                "confidence": response.logic_output.confidence,
-                "alerts": [
-                    {
-                        "code": getattr(alert, "code", ""),
-                        "severity": getattr(
-                            getattr(alert, "severity", None), "value", "info"
-                        ),
-                        "message": getattr(alert, "message", ""),
-                        "evidence": getattr(alert, "evidence", []),
-                        "metadata": getattr(alert, "metadata", {}),
-                    }
-                    for alert in response.logic_output.alerts
-                ],
-                "applied_rule_set": {
-                    "packs": response.logic_output.applied_rule_set.packs,
-                    "effective_date_window": response.logic_output.applied_rule_set.effective_date_window,
-                },
-                "explanation": response.logic_output.explanation,
-            },
-            "execution_time_ms": response.execution_time_ms,
-            "cache_hit": response.cache_hit,
-            "metadata": response.metadata,
-        }
-        # Do NOT add top-level "result" for CLI; REST-only parity requires it.
-        # For parity-smoke compatibility, when --plan json contained a plan array
-        # we mirror top-level result (the REST surface does this in plan-mode).
-        try:
-            # Best-effort detection: if args.plan is provided and the file had a "plan" key
-            had_plan = False
-            if args.plan:
-                with open(args.plan, "r") as _pf:
-                    _data = json.load(_pf)
-                    had_plan = isinstance(_data, dict) and isinstance(
-                        _data.get("plan"), list
-                    )
-            if had_plan:
-                response_dict["result"] = response.logic_output.result
-        except Exception:
-            pass
-
-        print(json.dumps(response_dict, indent=2))
-
-        try:
-            obs_metrics.inc("requests_total", {"surface": "cli"})
-            obs_metrics.inc("exec_calls_total", {"logic": request.logic_id})
-            obs_log.info(
-                "cli_run_ok",
-                attrs={"logic_id": request.logic_id},
-                trace_id=(
-                    request.context.get("trace_id")
-                    if isinstance(request.context, dict)
-                    else None
-                ),
-            )
-        except Exception:
-            pass
-
-    except Exception as e:
-        try:
-            obs_metrics.inc("errors_total", {"surface": "cli"})
-            obs_log.error("cli_run_error", attrs={"error": str(e)})
-        except Exception:
-            pass
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-
-def main() -> None:
-    """Main CLI entrypoint"""
+def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="zgpt",
-        description="Zoho GPT Backend CLI - Contract Testing Interface",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Execute with plan file
-  zgpt execute --plan plan.json
-  
-  # Execute with flags
-  zgpt execute --logic-id logic_001_profit_loss --org-id 60020606976 --period 2025-01
-  
-  # Execute with inputs and context
-  zgpt execute --logic-id logic_001_profit_loss --inputs '{"include_details": true}' --context '{"source": "cli"}'
-        """,
+        description="Zoho GPT Backend CLI - Contract Testing Interface (pure stdlib)",
     )
+    sub = parser.add_subparsers(dest="command")
 
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # Execute command
-    execute_parser = subparsers.add_parser(
-        "execute", help="Execute a logic module (contract testing only)"
-    )
-
-    # Plan file option
-    execute_parser.add_argument(
-        "--plan", type=str, help="Path to JSON file containing ExecuteRequest"
-    )
-
-    # Individual parameters (used when not using --plan)
-    execute_parser.add_argument(
-        "--logic-id", type=str, help="Logic module ID to execute"
-    )
-    execute_parser.add_argument(
+    p_exec = sub.add_parser("execute", help="Execute a logic module deterministically")
+    p_exec.add_argument("--plan", type=str, help="Path to JSON ExecuteRequest or plan")
+    p_exec.add_argument("--logic-id", type=str, help="Logic ID (e.g., logic_001_*)")
+    p_exec.add_argument(
         "--org-id", type=str, help="Organization ID (default: 60020606976)"
     )
-    execute_parser.add_argument(
-        "--period", type=str, help="Period in YYYY-MM format (default: 2025-01)"
+    p_exec.add_argument(
+        "--period", type=str, help=f"Period in YYYY-MM (default: {DEF_PERIOD})"
     )
-    execute_parser.add_argument(
-        "--inputs", type=str, help="JSON string of inputs to pass to logic module"
-    )
-    execute_parser.add_argument(
-        "--context", type=str, help="JSON string of context to pass to logic module"
-    )
+    p_exec.add_argument("--inputs", type=str, help="JSON for inputs")
+    p_exec.add_argument("--context", type=str, help="JSON for context")
 
-    args = parser.parse_args()
-
-    if not args.command:
+    ns = parser.parse_args(argv)
+    if ns.command is None:
         parser.print_help()
-        sys.exit(1)
+        return 0
 
-    if args.command == "execute":
-        execute_command(args)
-    else:
-        print(f"Unknown command: {args.command}", file=sys.stderr)
-        sys.exit(1)
+    if ns.command == "execute":
+        if ns.plan:
+            data = _load_plan_dict(ns.plan)
+            req = _parse_request_from_plan(data)
+        else:
+            req = _build_request_from_flags(ns)
+        out = _make_response(req)
+        print(json.dumps(out, separators=(",", ":"), sort_keys=True))
+        return 0
+
+    print(f"Unknown command: {ns.command}", file=sys.stderr)
+    return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
