@@ -199,6 +199,7 @@ help:
     @echo "  just cli-contract-test - Run CLI contract tests"
     @echo "  just evidence-test    - Run evidence OS tests"
     @echo "  just sbom             - Generate Software Bill of Materials"
+    @echo "  just ci-watch         - Watch latest CI run on main and triage failures"
     @echo "  just master-index     - Build canonical MASTER index (231)"
     @echo "  just master-index-check - Run MASTER index tests"
     @echo "  just l4-readiness     - Audit L4 readiness & pretty-print report"
@@ -326,3 +327,14 @@ parity-smoke:
 
 perf-baseline:
     pytest -q tests/perf/test_perf_baseline.py
+
+# CI watcher & triager for Phase-1 exit
+ci-watch:
+    @echo "🔎 Checking latest CI run on main..."
+    bash tools/ci_watch.sh
+
+# Build sdist + wheel into ./dist
+build-package:
+	@python3 -m pip install -U pip >/dev/null
+	@pip3 install -r requirements-dev.txt >/dev/null
+	@python3 -m build
