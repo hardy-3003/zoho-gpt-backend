@@ -67,16 +67,18 @@ def analyze_content_for_l4(text: str) -> Tuple[bool, bool, Optional[str]]:
     Returns: (is_ready, has_execute, reason_if_not_ready)
 
     Acceptance (any true):
-      1) Contains 'from logics.common.l4_default import L4'
-      2) Contains 'from logics.common.l4_base import L4Base' (optionally L4Base() or L4 symbol)
-      3) Defines top-level symbol 'L4 = ...'
+      1) Contains 'from logics.l4_contract_runtime import'
+      2) Contains 'from logics.common.l4_default import L4'
+      3) Contains 'from logics.common.l4_base import L4Base'
+      4) Defines top-level symbol 'L4 = ...'
 
     Bonus note: has top-level def execute(...)
     """
     try:
         # Text-based checks first (fast, deterministic)
-        has_rule1 = _contains(text, "from logics.common.l4_default import L4")
-        has_rule2 = _contains(text, "from logics.common.l4_base import L4Base")
+        has_rule1 = _contains(text, "from logics.l4_contract_runtime import")
+        has_rule2 = _contains(text, "from logics.common.l4_default import L4")
+        has_rule3 = _contains(text, "from logics.common.l4_base import L4Base")
 
         # Top-level L4 symbol (loose text check followed by a simple regex anchored to line start)
         l4_assign = False
@@ -85,7 +87,7 @@ def analyze_content_for_l4(text: str) -> Tuple[bool, bool, Optional[str]]:
                 l4_assign = True
                 break
 
-        is_ready = has_rule1 or has_rule2 or l4_assign
+        is_ready = has_rule1 or has_rule2 or has_rule3 or l4_assign
 
         # execute presence (top-level def execute(…))
         has_execute = False
@@ -97,7 +99,11 @@ def analyze_content_for_l4(text: str) -> Tuple[bool, bool, Optional[str]]:
         return (
             is_ready,
             has_execute,
-            None if is_ready else _not_ready_reason(has_rule1, has_rule2, l4_assign),
+            (
+                None
+                if is_ready
+                else _not_ready_reason(has_rule1, has_rule2, has_rule3, l4_assign)
+            ),
         )
     except (
         Exception
@@ -105,13 +111,15 @@ def analyze_content_for_l4(text: str) -> Tuple[bool, bool, Optional[str]]:
         return False, False, f"analyze_error: {type(ex).__name__}: {ex}"
 
 
-def _not_ready_reason(has_r1: bool, has_r2: bool, has_r3: bool) -> str:
+def _not_ready_reason(has_r1: bool, has_r2: bool, has_r3: bool, has_r4: bool) -> str:
     reasons = []
     if not has_r1:
-        reasons.append("missing 'from logics.common.l4_default import L4'")
+        reasons.append("missing 'from logics.l4_contract_runtime import'")
     if not has_r2:
-        reasons.append("missing 'from logics.common.l4_base import L4Base'")
+        reasons.append("missing 'from logics.common.l4_default import L4'")
     if not has_r3:
+        reasons.append("missing 'from logics.common.l4_base import L4Base'")
+    if not has_r4:
         reasons.append("missing top-level 'L4 = ...'")
     return "; ".join(reasons) if reasons else "unknown"
 

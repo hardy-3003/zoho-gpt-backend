@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -120,7 +124,7 @@ jobs:
             git config --local user.name "GitHub Action"
             git add artifacts/contract_snapshots.json
             git commit -m "Update contract snapshots [skip ci]"
-            git push
+            git push origin main
           fi
 
   golden:
