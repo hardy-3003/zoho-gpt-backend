@@ -1,3 +1,11 @@
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
+
 """
 Title: Regulatory Watcher — CBIC Circulars (GST)
 ID: L-201
@@ -10,39 +18,68 @@ Evidence: circular_sources, effective_dates, impact_assessment
 Evolution Notes: Auto-update rule packs; track circular versions
 """
 
-from typing import Any, Dict
-from helpers.schema_registry import validate_payload
-from helpers.history_store import write_event
+from typing import Dict, Any, List
+from helpers.learning_hooks import score_confidence
+from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.rules_engine import validate_accounting
-from helpers.learning_hooks import record_feedback, score_confidence
-from evidence.ledger import attach_evidence
+from helpers.provenance import make_provenance
+from helpers.schema_registry import validate_output_contract
+
+LOGIC_ID = "L-201"
+
+try:
+    from helpers.zoho_client import get_json
+except Exception:
+
+    def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
+        return {}
 
 
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Handle regulatory watcher for CBIC circulars."""
-    validate_payload("L-201", payload)
+try:
+    from helpers.history_store import append_event
+except Exception:
 
-    # TODO: Implement CBIC circular monitoring
-    # - Fetch latest circulars from CBIC API
-    # - Compare with cached versions
-    # - Assess impact on existing rule packs
-    # - Generate change notifications
+    def append_event(*args, **kwargs) -> None:
+        return None
 
-    result = {"circulars": [], "changes": [], "impact": {}}
 
-    provenance = attach_evidence({"result": result}, sources={})
-
-    out = {
+def execute(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Execute L-201 logic."""
+    # Validate input
+    validate_output_contract(payload, "schema://l-201.input.v1")
+    
+    # TODO: Implement actual logic here
+    # This is a placeholder implementation
+    
+    result = {}
+    
+    # Validate accounting rules
+    alerts = validate_accounting(result)
+    
+    # Create provenance
+    provenance = make_provenance(result=result)
+    
+    # Log with deltas and anomalies
+    history_data = log_with_deltas_and_anomalies(
+        logic_id=LOGIC_ID,
+        payload=payload,
+        result=result,
+        provenance=provenance
+    )
+    
+    # Score confidence
+    confidence = score_confidence(result=result)
+    
+    return {
         "result": result,
         "provenance": provenance,
-        "confidence": score_confidence({"result": result}),
-        "alerts": [],
+        "confidence": confidence,
+        "alerts": alerts,
+        "history": history_data,
         "applied_rule_set": {"packs": {}, "effective_date_window": None},
     }
 
-    write_event(
-        logic="L-201", inputs=payload, outputs=out["result"], provenance=provenance
-    )
-    record_feedback("L-201", context=payload, outputs=out["result"])
 
-    return out
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle L-201 logic (legacy interface)."""
+    return execute(payload)

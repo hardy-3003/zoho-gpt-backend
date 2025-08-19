@@ -1,3 +1,11 @@
+from logics.l4_contract_runtime import (
+    make_provenance,
+    score_confidence,
+    validate_output_contract,
+    validate_accounting,
+    log_with_deltas_and_anomalies,
+)
+
 """
 Title: ITC Eligibility Classifier (rule-based + evidence)
 ID: L-222
@@ -10,38 +18,68 @@ Evidence: TBD
 Evolution Notes: Stub implementation; needs full implementation
 """
 
-from typing import Any, Dict
-from helpers.schema_registry import validate_payload
-from helpers.history_store import write_event
+from typing import Dict, Any, List
+from helpers.learning_hooks import score_confidence
+from helpers.history_store import log_with_deltas_and_anomalies
 from helpers.rules_engine import validate_accounting
-from helpers.learning_hooks import record_feedback, score_confidence
-from evidence.ledger import attach_evidence
+from helpers.provenance import make_provenance
+from helpers.schema_registry import validate_output_contract
+
+LOGIC_ID = "L-222"
+
+try:
+    from helpers.zoho_client import get_json
+except Exception:
+
+    def get_json(url: str, headers: Dict[str, str]) -> Dict[str, Any]:
+        return {}
 
 
-def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Handle itc eligibility classifier (rule-based + evidence)."""
-    validate_payload("L-222", payload)
+try:
+    from helpers.history_store import append_event
+except Exception:
 
-    # TODO: Implement itc eligibility classifier (rule-based + evidence)
-    # - Add specific implementation details
-    # - Include proper evidence handling
-    # - Add comprehensive testing
+    def append_event(*args, **kwargs) -> None:
+        return None
 
+
+def execute(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Execute L-222 logic."""
+    # Validate input
+    validate_output_contract(payload, "schema://l-222.input.v1")
+    
+    # TODO: Implement actual logic here
+    # This is a placeholder implementation
+    
     result = {}
-
-    provenance = attach_evidence({"result": result}, sources={})
-
-    out = {
+    
+    # Validate accounting rules
+    alerts = validate_accounting(result)
+    
+    # Create provenance
+    provenance = make_provenance(result=result)
+    
+    # Log with deltas and anomalies
+    history_data = log_with_deltas_and_anomalies(
+        logic_id=LOGIC_ID,
+        payload=payload,
+        result=result,
+        provenance=provenance
+    )
+    
+    # Score confidence
+    confidence = score_confidence(result=result)
+    
+    return {
         "result": result,
         "provenance": provenance,
-        "confidence": score_confidence({"result": result}),
-        "alerts": [],
+        "confidence": confidence,
+        "alerts": alerts,
+        "history": history_data,
         "applied_rule_set": {"packs": {}, "effective_date_window": None},
     }
 
-    write_event(
-        logic="L-222", inputs=payload, outputs=out["result"], provenance=provenance
-    )
-    record_feedback("L-222", context=payload, outputs=out["result"])
 
-    return out
+def handle(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Handle L-222 logic (legacy interface)."""
+    return execute(payload)
