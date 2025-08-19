@@ -47,29 +47,26 @@ def execute(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Execute L-221 logic."""
     # Validate input
     validate_output_contract(payload, "schema://l-221.input.v1")
-    
+
     # TODO: Implement actual logic here
     # This is a placeholder implementation
-    
+
     result = {}
-    
+
     # Validate accounting rules
     alerts = validate_accounting(result)
-    
+
     # Create provenance
     provenance = make_provenance(result=result)
-    
+
     # Log with deltas and anomalies
     history_data = log_with_deltas_and_anomalies(
-        logic_id=LOGIC_ID,
-        payload=payload,
-        result=result,
-        provenance=provenance
+        logic_id=LOGIC_ID, payload=payload, result=result, provenance=provenance
     )
-    
+
     # Score confidence
     confidence = score_confidence(result=result)
-    
+
     return {
         "result": result,
         "provenance": provenance,
