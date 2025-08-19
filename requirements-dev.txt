@@ -10,7 +10,7 @@ jsonschema>=4.21.0
 
 # Linting and quality tools
 ruff>=0.3.0
-black>=24.0.0
+black==24.8.0
 mypy>=1.8.0
 bandit>=1.7.0
 safety>=2.3.0

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RANGE="${1:-001-200}"          # e.g. 001-200 or 061-200
+RANGE="${1:-001-231}"          # e.g. 001-200 or 061-200
 TAG="${2:-}"                   # optional git tag name
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -36,7 +36,7 @@ print("py_compile ✅ all")
 PY
 
 # run tests (includes naming guardrail & contract tests)
-export NAMING_ENFORCER_RANGE="001-200"
+export NAMING_ENFORCER_RANGE="001-231"
 pytest -q
 
 # optional commit + tag
