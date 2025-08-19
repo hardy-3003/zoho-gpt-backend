@@ -458,7 +458,7 @@
     }
   },
   "metadata": {
-    "generated_at": "2025-08-19T09:59:21.730812",
+    "generated_at": "2025-08-19T10:19:42.771549",
     "generator": "tools/gen_contract_snapshots.py",
     "total_contracts": 27,
     "version": "1.0"
